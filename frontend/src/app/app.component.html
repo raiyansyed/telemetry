@@ -1,0 +1,54 @@
+<div class="min-h-screen bg-[var(--bg)]">
+  <!-- Navbar -->
+  <nav class="border-b border-[var(--border)] bg-[var(--card)] shadow-sm sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center space-x-3">
+          <img src="assets/logo.png" alt="Logo" class="h-9 w-9 object-contain">
+          <h1 class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-600">
+            Vehicle Telemetry System
+          </h1>
+        </div>
+        <div class="flex items-center space-x-3">
+          <!-- Location Selector -->
+          <div *ngIf="isLoggedIn" class="relative">
+            <button (click)="toggleLocationMenu()"
+              class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] hover:border-blue-400 transition">
+              <span>📍</span>
+              <span>{{ activeLocation || 'Set Location' }}</span>
+              <span class="text-[var(--muted)]">▾</span>
+            </button>
+            <div *ngIf="showLocationMenu"
+              class="absolute right-0 mt-2 w-48 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 py-1 max-h-64 overflow-y-auto">
+              <button *ngFor="let loc of locations"
+                (click)="changeLocation(loc)"
+                class="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 hover:text-blue-600 transition"
+                [ngClass]="{'bg-blue-50 text-blue-600 font-semibold': activeLocation === loc, 'text-[var(--text)]': activeLocation !== loc}">
+                {{ loc }}
+              </button>
+            </div>
+          </div>
+
+          <span *ngIf="isLoggedIn" class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-[var(--border)] text-[var(--muted)]">
+            {{ userRole }}
+          </span>
+          <button (click)="themeService.toggleTheme()" class="p-2 rounded-lg hover:bg-[var(--border)] transition text-[var(--muted)]">
+            <span *ngIf="!themeService.isDark">🌙</span>
+            <span *ngIf="themeService.isDark">☀️</span>
+          </button>
+          <button *ngIf="isLoggedIn" (click)="logout()" class="px-4 py-2 text-sm font-medium border border-[var(--border)] rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition text-[var(--text)]">
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Click outside to close location menu -->
+  <div *ngIf="showLocationMenu" (click)="showLocationMenu = false" class="fixed inset-0 z-40"></div>
+
+  <!-- Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <router-outlet></router-outlet>
+  </main>
+</div>

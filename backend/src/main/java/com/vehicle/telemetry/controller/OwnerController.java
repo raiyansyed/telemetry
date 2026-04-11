@@ -1,0 +1,312 @@
+package com.vehicle.telemetry.controller;
+
+import com.vehicle.telemetry.config.AppLocations;
+import com.vehicle.telemetry.dto.AssignmentCustomerOption;
+import com.vehicle.telemetry.dto.FleetAlertResponse;
+import com.vehicle.telemetry.dto.FleetAnalytics;
+import com.vehicle.telemetry.dto.VehicleAssignRequest;
+import com.vehicle.telemetry.dto.VehiclePeakSpeed;
+import com.vehicle.telemetry.dto.VehicleRequest;
+import com.vehicle.telemetry.entity.*;
+import com.vehicle.telemetry.enums.Role;
+import com.vehicle.telemetry.enums.VehicleStatus;
+import com.vehicle.telemetry.repository.*;
+import com.vehicle.telemetry.service.FleetActivityService;
+import com.vehicle.telemetry.service.VehicleService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/owner")
+@RequiredArgsConstructor
+public class OwnerController {
+
+    private final VehicleService vehicleService;
+    private final FleetActivityService fleetActivityService;
+    private final UserRepository userRepository;
+    private final OwnerDetailsRepository ownerDetailsRepository;
+    private final VehicleRepository vehicleRepository;
+    private final CustomerDetailsRepository customerDetailsRepository;
+    private final VehicleReadingRepository vehicleReadingRepository;
+
+    @GetMapping("/analytics")
+    public ResponseEntity<FleetAnalytics> getAnalytics(Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        return ResponseEntity.ok(vehicleService.getFleetAnalytics(owner.getId()));
+    }
+
+    @GetMapping("/trends")
+    public ResponseEntity<List<VehicleReading>> getTrends(Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        return ResponseEntity.ok(vehicleService.getFleetTrendReadings(owner.getId()));
+    }
+
+    @GetMapping("/peak-speeds")
+    public ResponseEntity<List<VehiclePeakSpeed>> getPeakSpeeds(Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        return ResponseEntity.ok(vehicleService.getTopVehiclePeakSpeeds(owner.getId()));
+    }
+
+    @GetMapping("/vehicles")
+    public ResponseEntity<List<Vehicle>> getVehicles(Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        return ResponseEntity.ok(vehicleRepository.findByOwnerId(owner.getId()));
+    }
+
+    @PostMapping("/vehicles")
+    @Transactional
+    @SuppressWarnings("null")
+    public ResponseEntity<?> addVehicle(@RequestBody VehicleRequest request, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        User ownerUser = resolveUser(principal);
+
+        if (request.getVin() == null || request.getVin().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "VIN is required"));
+        }
+
+        String loc = ownerUser.getLocation();
+        if (loc == null || loc.isBlank()) {
+            loc = AppLocations.DEFAULT_CITY;
+        }
+
+        Vehicle vehicle = Vehicle.builder()
+                .vin(request.getVin().trim())
+                .make(request.getMake())
+                .model(request.getModel())
+                .year(request.getYear() != null ? request.getYear() : 2024)
+                .status(VehicleStatus.ACTIVE)
+                .owner(owner)
+                .location(loc.trim())
+                .build();
+
+        Vehicle savedVehicle = Objects.requireNonNull(vehicleRepository.save(vehicle));
+
+        owner.setFleetSize(vehicleRepository.findByOwnerId(owner.getId()).size());
+        ownerDetailsRepository.save(owner);
+
+        fleetActivityService.log(owner, savedVehicle, savedVehicle.getVin(),
+            "Vehicle added: " + savedVehicle.getMake() + " " + savedVehicle.getModel() + " (" + savedVehicle.getVin() + ")", "INFO");
+
+        return ResponseEntity.ok(savedVehicle);
+    }
+
+    @DeleteMapping("/vehicles/{id}")
+    @Transactional
+    public ResponseEntity<?> deleteVehicle(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        Vehicle vehicle = vehicleRepository.findByOwnerIdAndId(owner.getId(), id)
+                .orElse(null);
+
+        if (vehicle == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String vin = vehicle.getVin();
+        fleetActivityService.deleteForVehicle(id);
+        vehicleReadingRepository.deleteByVehicleId(id);
+        vehicleRepository.delete(vehicle);
+
+        owner.setFleetSize(vehicleRepository.findByOwnerId(owner.getId()).size());
+        ownerDetailsRepository.save(owner);
+
+        fleetActivityService.log(owner, null, vin, "Vehicle removed from fleet: " + vin, "INFO");
+
+        return ResponseEntity.ok(Map.of("status", "deleted"));
+    }
+
+    @GetMapping("/vehicles/{id}/latest")
+    public ResponseEntity<VehicleReading> getVehicleLatest(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        Vehicle vehicle = vehicleRepository.findByOwnerIdAndId(owner.getId(), id).orElse(null);
+        if (vehicle == null) {
+            return ResponseEntity.notFound().build();
+        }
+        VehicleReading latest = vehicleService.getLatestReading(id);
+        return latest != null ? ResponseEntity.ok(latest) : ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/vehicles/{id}/hourly")
+    public ResponseEntity<?> getVehicleHourly(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        Vehicle vehicle = vehicleRepository.findByOwnerIdAndId(owner.getId(), id).orElse(null);
+        if (vehicle == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(vehicleService.getHourlyAggregation(id));
+    }
+
+    @GetMapping("/vehicles/{id}/alerts")
+    public ResponseEntity<List<FleetAlertResponse>> getVehicleAlerts(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        Vehicle vehicle = vehicleRepository.findByOwnerIdAndId(owner.getId(), id).orElse(null);
+        if (vehicle == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(fleetActivityService.listForVehicle(owner.getId(), id));
+    }
+
+    @GetMapping("/alerts")
+    public ResponseEntity<List<FleetAlertResponse>> getAllAlerts(Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        return ResponseEntity.ok(fleetActivityService.listForOwner(owner.getId()));
+    }
+
+    @PutMapping("/alerts/{id}/read")
+    public ResponseEntity<?> markAlertRead(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        fleetActivityService.markRead(id, owner.getId());
+        return ResponseEntity.ok(Map.of("status", "read"));
+    }
+
+    /**
+     * Customers registered in the same location as the vehicle, with flags for swap UX.
+     */
+    @GetMapping("/vehicles/{id}/assignment-options")
+    public ResponseEntity<?> getAssignmentOptions(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        Vehicle vehicle = vehicleRepository.findByOwnerIdAndId(owner.getId(), id).orElse(null);
+        if (vehicle == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String loc = vehicle.getLocation();
+        if (loc == null || loc.isBlank()) {
+            loc = AppLocations.DEFAULT_CITY;
+        }
+
+        List<User> users = userRepository.findByRoleAndLocationIgnoreCase(Role.CUSTOMER, loc);
+        List<AssignmentCustomerOption> options = new ArrayList<>();
+
+        for (User u : users) {
+            CustomerDetails cd = customerDetailsRepository.findByUserId(u.getId()).orElse(null);
+            if (cd == null) {
+                continue;
+            }
+            List<Vehicle> assigned = vehicleRepository.findByAssignedCustomerId(cd.getId());
+            Vehicle other = assigned.stream()
+                    .filter(v -> !v.getId().equals(vehicle.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            options.add(AssignmentCustomerOption.builder()
+                    .username(u.getUsername())
+                    .hasOtherVehicle(other != null)
+                    .otherVehicleId(other != null ? other.getId() : null)
+                    .otherVehicleVin(other != null ? other.getVin() : null)
+                    .build());
+        }
+
+        return ResponseEntity.ok(options);
+    }
+
+    @PostMapping("/vehicles/{id}/assign")
+    @Transactional
+    public ResponseEntity<?> assignVehicle(
+            @PathVariable Long id,
+            @RequestBody VehicleAssignRequest request,
+            Principal principal
+    ) {
+        OwnerDetails owner = resolveOwner(principal);
+        Vehicle vehicle = vehicleRepository.findByOwnerIdAndId(owner.getId(), id).orElse(null);
+        if (vehicle == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (request.getCustomerUsername() == null || request.getCustomerUsername().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Customer username is required"));
+        }
+
+        User customerUser = userRepository.findByUsername(request.getCustomerUsername().trim()).orElse(null);
+        if (customerUser == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "User '" + request.getCustomerUsername() + "' not found"));
+        }
+
+        CustomerDetails customer = customerDetailsRepository.findByUserId(customerUser.getId()).orElse(null);
+        if (customer == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "User '" + request.getCustomerUsername() + "' is not a customer"));
+        }
+
+        String vLoc = vehicle.getLocation() != null ? vehicle.getLocation().trim() : "";
+        String cLoc = customerUser.getLocation() != null ? customerUser.getLocation().trim() : "";
+        if (vLoc.isEmpty()) {
+            vLoc = AppLocations.DEFAULT_CITY;
+        }
+        if (!vLoc.equalsIgnoreCase(cLoc)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Customer must be registered in the vehicle's location: " + vLoc));
+        }
+
+        boolean swap = Boolean.TRUE.equals(request.getSwap());
+        List<Vehicle> existing = vehicleRepository.findByAssignedCustomerId(customer.getId()).stream()
+                .filter(v -> !v.getId().equals(vehicle.getId()))
+                .collect(Collectors.toList());
+
+        if (!existing.isEmpty()) {
+            if (!swap) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "This customer already has another vehicle assigned. Enable swap to move them to this vehicle."));
+            }
+            for (Vehicle other : existing) {
+                other.setAssignedCustomer(null);
+                other.setStatus(VehicleStatus.ACTIVE);
+                vehicleRepository.save(other);
+                fleetActivityService.log(owner, other, other.getVin(),
+                        "Unassigned " + other.getVin() + " (customer moved to " + vehicle.getVin() + ")", "INFO");
+            }
+        }
+
+        vehicle.setAssignedCustomer(customer);
+        vehicle.setStatus(VehicleStatus.RENTED);
+        vehicleRepository.save(vehicle);
+
+        fleetActivityService.log(owner, vehicle, vehicle.getVin(),
+                "Assigned to @" + customerUser.getUsername(), "INFO");
+
+        return ResponseEntity.ok(Map.of(
+                "status", "assigned",
+                "vehicleVin", vehicle.getVin(),
+                "assignedTo", customerUser.getUsername()
+        ));
+    }
+
+    @PostMapping("/vehicles/{id}/unassign")
+    @Transactional
+    public ResponseEntity<?> unassignVehicle(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        Vehicle vehicle = vehicleRepository.findByOwnerIdAndId(owner.getId(), id).orElse(null);
+        if (vehicle == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String prev = vehicle.getAssignedCustomer() != null && vehicle.getAssignedCustomer().getUser() != null
+                ? vehicle.getAssignedCustomer().getUser().getUsername()
+                : null;
+
+        vehicle.setAssignedCustomer(null);
+        vehicle.setStatus(VehicleStatus.ACTIVE);
+        vehicleRepository.save(vehicle);
+
+        fleetActivityService.log(owner, vehicle, vehicle.getVin(),
+                prev != null ? ("Unassigned from @" + prev) : "Vehicle unassigned", "INFO");
+
+        return ResponseEntity.ok(Map.of("status", "unassigned"));
+    }
+
+    private OwnerDetails resolveOwner(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
+        return ownerDetailsRepository.findByUserId(user.getId()).orElseThrow();
+    }
+
+    private User resolveUser(Principal principal) {
+        return userRepository.findByUsername(principal.getName()).orElseThrow();
+    }
+}

@@ -1,0 +1,234 @@
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { ApiService, Rental, Vehicle, VehicleReading, Alert, HourlyData } from '../core/api.service';
+
+@Component({
+  selector: 'app-customer',
+  templateUrl: './customer.component.html',
+  styleUrls: ['./customer.component.scss']
+})
+export class CustomerComponent implements OnInit, OnDestroy {
+
+  rentals: Rental[] = [];
+  activeRental: Rental | null = null;
+  assignedVehicles: Vehicle[] = [];
+
+  // Live telemetry
+  telemetry: VehicleReading | null = null;
+  alerts: Alert[] = [];
+  hourlyData: HourlyData | null = null;
+  pollInterval: any;
+
+  // Driver controls (merged from driver component)
+  latestReading: VehicleReading | null = null;
+  readings: VehicleReading[] = [];
+  isAccelerating = false;
+  isBraking = false;
+  throttleLevel = 0.5;
+  controlMode: 'auto' | 'manual' = 'auto';
+
+  get vehicleId(): number {
+    // Prefer assigned vehicle, then rental vehicle
+    if (this.assignedVehicles.length > 0) {
+      return this.assignedVehicles[0].id;
+    }
+    return this.activeRental?.vehicle?.id ?? 1;
+  }
+
+  get activeVehicle(): Vehicle | null {
+    if (this.assignedVehicles.length > 0) return this.assignedVehicles[0];
+    return this.activeRental?.vehicle ?? null;
+  }
+
+  // Speedometer gauge calculations
+  get speedNeedleAngle(): number {
+    const speed = this.latestReading?.speed || 0;
+    return -135 + (speed / 200) * 270;
+  }
+
+  get speedPercent(): number {
+    return Math.min(100, ((this.latestReading?.speed || 0) / 200) * 100);
+  }
+
+  get tempPercent(): number {
+    return Math.min(100, (((this.latestReading?.temperature || 70) - 60) / 80) * 100);
+  }
+
+  // Chart data
+  public liveChartData: any = {
+    labels: [],
+    datasets: [
+      { data: [], label: 'Speed (km/h)', borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+      { data: [], label: 'Temp (°C)', borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 }
+    ]
+  };
+
+  public chartOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 0 },
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' } },
+      x: { ticks: { maxTicksLimit: 8, font: { size: 9 } }, grid: { display: false } }
+    }
+  };
+
+  constructor(private readonly apiService: ApiService) {}
+
+  ngOnInit(): void {
+    this.loadInitialData();
+  }
+
+  ngOnDestroy(): void {
+    if (this.pollInterval) { clearInterval(this.pollInterval); }
+    this.stopAccelerate();
+    this.stopBrake();
+  }
+
+  private loadInitialData(): void {
+    // Load assigned vehicles
+    this.apiService.getCustomerAssignedVehicles().subscribe({
+      next: (data) => {
+        this.assignedVehicles = data;
+        if (this.assignedVehicles.length > 0) {
+          this.startLivePolling();
+        }
+      },
+      error: () => {}
+    });
+
+    // Load rentals
+    this.apiService.getCustomerRentals().subscribe({
+      next: (data) => {
+        this.rentals = data;
+        this.activeRental = this.rentals.find(r => r.status === 'ACTIVE') || this.rentals[0] || null;
+        if (this.activeRental && this.assignedVehicles.length === 0) {
+          this.startLivePolling();
+        }
+      }
+    });
+  }
+
+  private startLivePolling(): void {
+    if (this.pollInterval) return; // Don't double-start
+    this.pollData();
+    this.pollInterval = setInterval(() => this.pollData(), 2000);
+  }
+
+  private pollData(): void {
+    const vid = this.vehicleId;
+
+    this.apiService.getDriverLatestReading(vid).subscribe({
+      next: (data) => {
+        this.latestReading = data;
+        this.telemetry = data;
+      },
+      error: () => {}
+    });
+
+    this.apiService.getDriverReadings(vid).subscribe({
+      next: (data) => {
+        this.readings = [...data].reverse();
+        this.updateChart();
+      },
+      error: () => {}
+    });
+
+    this.apiService.getCustomerAlerts().subscribe({
+      next: (data) => this.alerts = data,
+      error: () => {}
+    });
+  }
+
+  private updateChart(): void {
+    const labels = this.readings.map(r => new Date(r.timestamp).toLocaleTimeString());
+    this.liveChartData = {
+      labels,
+      datasets: [
+        { ...this.liveChartData.datasets[0], data: this.readings.map(r => r.speed) },
+        { ...this.liveChartData.datasets[1], data: this.readings.map(r => r.temperature) }
+      ]
+    };
+  }
+
+  onMarkAlertRead(alertId: number): void {
+    this.apiService.customerMarkAlertRead(alertId).subscribe({
+      next: () => this.pollData()
+    });
+  }
+
+  get isOverspeeding(): boolean {
+    return (this.latestReading?.speed ?? 0) > 80;
+  }
+
+  get hasVehicle(): boolean {
+    return this.assignedVehicles.length > 0 || this.activeRental != null;
+  }
+
+  // ---- Owner Info (from rental) ----
+  get ownerCompany(): string {
+    return (this.activeRental as any)?.owner?.companyName || 'Fleet Owner';
+  }
+
+  get ownerName(): string {
+    return (this.activeRental as any)?.owner?.user?.username || 'Owner';
+  }
+
+  // ---- Vehicle Controls (from driver) ----
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(e: KeyboardEvent) {
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      this.startAccelerate();
+    }
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S' || e.key === ' ') {
+      e.preventDefault();
+      this.startBrake();
+    }
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  onKeyUp(e: KeyboardEvent) {
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      this.stopAccelerate();
+    }
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S' || e.key === ' ') {
+      this.stopBrake();
+    }
+  }
+
+  startAccelerate(): void {
+    if (this.isAccelerating) return;
+    this.isAccelerating = true;
+    this.isBraking = false;
+    this.controlMode = 'manual';
+    this.sendControl('ACCELERATE');
+  }
+
+  stopAccelerate(): void {
+    if (!this.isAccelerating) return;
+    this.isAccelerating = false;
+    if (!this.isBraking) { this.sendControl('IDLE'); }
+  }
+
+  startBrake(): void {
+    if (this.isBraking) return;
+    this.isBraking = true;
+    this.isAccelerating = false;
+    this.controlMode = 'manual';
+    this.sendControl('BRAKE');
+  }
+
+  stopBrake(): void {
+    if (!this.isBraking) return;
+    this.isBraking = false;
+    if (!this.isAccelerating) { this.sendControl('IDLE'); }
+  }
+
+  onThrottleChange(): void {
+    if (this.isAccelerating) { this.sendControl('ACCELERATE'); }
+  }
+
+  private sendControl(action: string): void {
+    this.apiService.controlVehicle(this.vehicleId, action, this.throttleLevel).subscribe();
+  }
+}
