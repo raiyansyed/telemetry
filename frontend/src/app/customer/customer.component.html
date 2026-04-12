@@ -3,11 +3,16 @@
   <div class="flex justify-between items-center">
     <div class="flex items-center gap-3">
       <h2 class="text-3xl font-extrabold text-[var(--text)]">My Vehicle Dashboard</h2>
+      <span *ngIf="username" class="text-sm font-semibold text-[var(--muted)]">Welcome, <span class="text-[var(--text)]">{{ username }}</span></span>
       <span *ngIf="hasVehicle && latestReading" class="inline-flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/30 px-3 py-1 rounded-full text-xs font-bold tracking-wider animate-pulse">
         LIVE
       </span>
     </div>
     <div *ngIf="hasVehicle" class="flex items-center space-x-3">
+      <button *ngIf="controlMode === 'manual'" (click)="switchToAuto()"
+        class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+        ↻ Switch to Auto
+      </button>
       <span class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border"
             [ngClass]="controlMode === 'manual'
               ? 'bg-blue-100 text-blue-700 border-blue-300'
@@ -26,17 +31,60 @@
         <div class="text-xl font-bold">{{ assignedVehicles[0].make }} {{ assignedVehicles[0].model }} ({{ assignedVehicles[0].year }})</div>
         <div class="text-sm font-mono opacity-70">{{ assignedVehicles[0].vin }}</div>
       </div>
-      <div class="text-right">
+      <div class="text-right flex flex-col items-end gap-2">
         <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-bold uppercase">{{ assignedVehicles[0].status }}</span>
+        <!-- Release Vehicle Button (double-confirm) -->
+        <button *ngIf="releaseStep === 0" (click)="initiateRelease()"
+          class="px-3 py-1.5 bg-red-500/80 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition">
+          ↩ Release Vehicle
+        </button>
+        <div *ngIf="releaseStep === 1" class="flex items-center gap-2">
+          <span class="text-xs font-bold">Are you sure?</span>
+          <button (click)="confirmRelease()" class="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition">Yes, Release</button>
+          <button (click)="cancelRelease()" class="px-2 py-1 bg-white/20 text-white text-xs font-bold rounded hover:bg-white/30 transition">Cancel</button>
+        </div>
+        <div *ngIf="releaseStep === 2" class="text-xs font-semibold opacity-80">Releasing…</div>
       </div>
     </div>
   </div>
 
   <!-- No Active Vehicle -->
-  <div *ngIf="!hasVehicle" class="bg-[var(--card)] p-10 rounded-2xl border border-[var(--border)] text-center text-[var(--muted)]">
-    <div class="text-5xl mb-4">---</div>
-    <div class="font-bold text-lg text-[var(--text)]">No Assigned Vehicles</div>
-    <div class="text-sm mt-2">When a fleet owner assigns a vehicle to you, your live dashboard will appear here.</div>
+  <div *ngIf="!hasVehicle" class="space-y-6">
+    <div class="bg-[var(--card)] p-10 rounded-2xl border border-[var(--border)] text-center text-[var(--muted)]">
+      <div class="text-5xl mb-4">---</div>
+      <div class="font-bold text-lg text-[var(--text)]">No Assigned Vehicles</div>
+      <div class="text-sm mt-2">Browse available vehicles below and submit an assignment request. You can also change your location using the navbar selector to see vehicles in other cities.</div>
+    </div>
+
+    <!-- Available Vehicles -->
+    <div *ngIf="availableVehicles.length > 0" class="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-[var(--border)]">
+        <h3 class="text-lg font-bold text-[var(--text)]">🚙 Available Vehicles in Your Area</h3>
+        <p class="text-xs text-[var(--muted)] mt-1">Submit a request and wait for the owner to approve.</p>
+      </div>
+      <div class="divide-y divide-[var(--border)]">
+        <div *ngFor="let v of availableVehicles" class="px-6 py-4 flex items-center gap-4 hover:bg-[var(--bg)] transition">
+          <div class="text-3xl">🚗</div>
+          <div class="flex-1">
+            <div class="font-bold text-[var(--text)]">{{ v.make }} {{ v.model }} ({{ v.year }})</div>
+            <div class="text-xs font-mono text-[var(--muted)]">{{ v.vin }}</div>
+            <div class="text-xs text-[var(--muted)]">📍 {{ v.location }}</div>
+          </div>
+          <button *ngIf="!isVehicleRequested(v.id)" (click)="requestVehicle(v.id)" [disabled]="requestLoading"
+            class="text-xs px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition font-semibold">
+            {{ requestLoading ? 'Sending…' : '📩 Request Assignment' }}
+          </button>
+          <span *ngIf="isVehicleRequested(v.id)"
+            class="text-xs px-4 py-2 bg-amber-100 text-amber-700 border border-amber-300 rounded-lg font-semibold inline-flex items-center gap-1">
+            ⏳ Requested
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="availableVehicles.length === 0" class="bg-[var(--card)] p-6 rounded-2xl border border-[var(--border)] text-center text-[var(--muted)]">
+      <div class="text-sm">No available vehicles in your area. Try changing your location to browse other cities.</div>
+    </div>
   </div>
 
   <!-- Active Vehicle Dashboard -->

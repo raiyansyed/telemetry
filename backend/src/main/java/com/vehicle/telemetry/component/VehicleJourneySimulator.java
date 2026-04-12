@@ -81,17 +81,25 @@ public class VehicleJourneySimulator implements CommandLineRunner {
                 continue;
             }
             Long vehicleId = vehicle.getId();
+            boolean isRented = vehicle.getAssignedCustomer() != null;
 
-            if (vehicleControlService.isManualControl(vehicleId)) {
-                state.speed = vehicleControlService.computeNextSpeed(vehicleId, state.speed);
-                state.temperature = vehicleControlService.computeTemperature(state.speed);
+            if (isRented) {
+                // Full live telemetry for rented vehicles
+                if (vehicleControlService.isManualControl(vehicleId)) {
+                    state.speed = vehicleControlService.computeNextSpeed(vehicleId, state.speed);
+                    state.temperature = vehicleControlService.computeTemperature(state.speed);
+                } else {
+                    state.speed = Math.max(0.0, Math.min(130.0, state.speed + (random.nextDouble() * 10 - 5)));
+                    state.temperature = Math.max(60.0, Math.min(120.0, state.temperature + (random.nextDouble() * 4 - 2)));
+                }
+
+                state.latitude += (random.nextDouble() * 0.001 - 0.0005);
+                state.longitude += (random.nextDouble() * 0.001 - 0.0005);
             } else {
-                state.speed = Math.max(0.0, Math.min(130.0, state.speed + (random.nextDouble() * 10 - 5)));
-                state.temperature = Math.max(60.0, Math.min(120.0, state.temperature + (random.nextDouble() * 4 - 2)));
+                // Unassigned vehicles: static GPS, zero speed, idle temperature
+                state.speed = 0.0;
+                state.temperature = 70.0;
             }
-
-            state.latitude += (random.nextDouble() * 0.001 - 0.0005);
-            state.longitude += (random.nextDouble() * 0.001 - 0.0005);
 
             AlertLevel level = alertService.evaluateAndGetAlertLevel(state.speed, state.temperature);
 
@@ -108,7 +116,7 @@ public class VehicleJourneySimulator implements CommandLineRunner {
 
             vehicleReadingRepository.save(reading);
 
-            if (level != AlertLevel.NONE && state.lastTelemetryAlertLogged != level) {
+            if (isRented && level != AlertLevel.NONE && state.lastTelemetryAlertLogged != level) {
                 String type = level == AlertLevel.CRITICAL ? "CRITICAL" : "WARNING";
                 String msg = String.format("%s on %s: speed %.1f km/h, engine %.1f °C",
                         level.name(), vehicle.getVin(), state.speed, state.temperature);
@@ -118,9 +126,11 @@ public class VehicleJourneySimulator implements CommandLineRunner {
                 state.lastTelemetryAlertLogged = AlertLevel.NONE;
             }
 
-            String mode = vehicleControlService.isManualControl(vehicleId) ? "MANUAL" : "AUTO";
-            System.out.printf("[%s] [VIN: %s] Speed: %.2f km/h | Temp: %.2f°C | Alert: %s%n",
-                    mode, vehicle.getVin(), state.speed, state.temperature, level.name());
+            if (isRented) {
+                String mode = vehicleControlService.isManualControl(vehicleId) ? "MANUAL" : "AUTO";
+                System.out.printf("[%s] [VIN: %s] Speed: %.2f km/h | Temp: %.2f°C | Alert: %s%n",
+                        mode, vehicle.getVin(), state.speed, state.temperature, level.name());
+            }
         }
     }
 

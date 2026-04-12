@@ -61,6 +61,28 @@ public class FleetActivityService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Returns alerts for a specific vehicle (used by customer dashboard).
+     */
+    public List<FleetAlertResponse> listForVehicleDirect(Long vehicleId) {
+        return fleetActivityRepository.findTop50ByVehicle_IdOrderByCreatedAtDesc(vehicleId).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Mark an alert as read by vehicle ownership check (for customers).
+     */
+    @Transactional
+    public void markReadByVehicle(Long activityId, Long vehicleId) {
+        fleetActivityRepository.findById(activityId).ifPresent(a -> {
+            if (a.getVehicle() != null && a.getVehicle().getId().equals(vehicleId)) {
+                a.setRead(true);
+                fleetActivityRepository.save(a);
+            }
+        });
+    }
+
     @Transactional
     public void markRead(Long activityId, Long ownerId) {
         fleetActivityRepository.findById(activityId).ifPresent(a -> {
@@ -69,6 +91,16 @@ public class FleetActivityService {
                 fleetActivityRepository.save(a);
             }
         });
+    }
+
+    @Transactional
+    public void markAllRead(Long ownerId) {
+        List<FleetActivity> unread = fleetActivityRepository.findTop100ByOwner_IdOrderByCreatedAtDesc(ownerId)
+                .stream().filter(a -> !a.isRead()).collect(Collectors.toList());
+        for (FleetActivity a : unread) {
+            a.setRead(true);
+        }
+        fleetActivityRepository.saveAll(unread);
     }
 
     @Transactional

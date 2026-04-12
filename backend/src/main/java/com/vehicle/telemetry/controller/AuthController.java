@@ -58,6 +58,7 @@ public class AuthController {
                 .token(jwtToken)
                 .role(user.getRole().name())
                 .location(user.getLocation())
+                .username(user.getUsername())
                 .build());
     }
 
@@ -105,6 +106,7 @@ public class AuthController {
                 .token(jwtToken)
                 .role(role.name())
                 .location(user.getLocation())
+                .username(user.getUsername())
                 .build());
     }
 }

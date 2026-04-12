@@ -17,7 +17,8 @@ backend/src/main/java/com/vehicle/telemetry/
 │   ├── Vehicle.java                   — id, vin, make, model, year, status, imageUrl, location, FK → Owner, FK → AssignedCustomer
 │   ├── Rental.java                    — id, startDate, endDate, status, FKs
 │   ├── VehicleReading.java            — id, timestamp, speed, temperature, lat/lon, alertLevel, FK → Vehicle
-│   └── FleetActivity.java             — Owner fleet activity / alert log (message, type, read, optional FK → Vehicle)
+│   ├── FleetActivity.java             — Owner fleet activity / alert log (message, type, read, optional FK → Vehicle)
+│   └── AssignmentRequest.java         — id, customer, vehicle, owner, status (PENDING/APPROVED/REJECTED), createdAt, resolvedAt
 ├── enums/                             — Enum types (separate from entities for clarity)
 │   ├── Role.java                      — OWNER, CUSTOMER
 │   ├── AlertLevel.java                — NONE, WARNING, CRITICAL
@@ -30,10 +31,11 @@ backend/src/main/java/com/vehicle/telemetry/
 │   ├── VehicleRepository.java         — findByAssignedCustomerId, findByOwnerIdAndId, findAllJoinFetchOwner
 │   ├── RentalRepository.java
 │   ├── VehicleReadingRepository.java  — Custom @Query for AVG speed/temp, peak speeds, hourly aggregation, deleteByVehicleId
-│   └── FleetActivityRepository.java   — Top activities by owner; deleteByVehicleId
+│   ├── FleetActivityRepository.java   — Top activities by owner; deleteByVehicleId
+│   └── AssignmentRequestRepository.java — Queries by owner/status, by customer/vehicle/status, deleteByVehicleId
 ├── dto/                               — Data Transfer Objects
 │   ├── AuthRequest.java               — Login payload
-│   ├── AuthResponse.java              — Token + role + location response
+│   ├── AuthResponse.java              — Token + role + location + username response
 │   ├── RegisterRequest.java           — Registration payload (+ location field)
 │   ├── FleetAnalytics.java            — avgSpeed, avgTemp, vehicleCount, activeRentals
 │   ├── VehiclePeakSpeed.java          — + vehicleId; peak speed, GPS, timestamp, assignedDriverUsername
@@ -49,14 +51,14 @@ backend/src/main/java/com/vehicle/telemetry/
 ├── service/                           — Business logic
 │   ├── VehicleService.java            — Fleet analytics, trend data, peak speeds (top 5), hourly aggregation, findAllVehiclesForSimulation (JOIN FETCH owner)
 │   ├── FleetActivityService.java      — Persist & list fleet activities; logByIds for simulator thread
-│   ├── VehicleControlService.java     — Manual vehicle control state (throttle/brake)
+│   ├── VehicleControlService.java     — Manual vehicle control state (throttle/brake) + clearManualControl()
 │   └── AlertService.java              — Two-level threshold evaluation (WARNING/CRITICAL)
 ├── controller/                        — REST endpoints
 │   ├── AuthController.java            — login, register, GET /locations (supported cities; default Chennai)
-│   ├── UserController.java            — [NEW] /api/user/profile + /api/user/location
-│   ├── OwnerController.java           — Full vehicle CRUD, assignment, detail views, alerts
+│   ├── UserController.java            — [NEW] /api/user/profile (+ isAssigned) + /api/user/location (locked for owners; locked for assigned customers)
+│   ├── OwnerController.java           — Full vehicle CRUD, assignment, detail views, alerts, mark-all-read, assignment request management
 │   ├── DriverController.java          — /api/driver/vehicle/{id}/readings + /latest + /control
-│   └── CustomerController.java        — /api/customer/rentals + /assigned-vehicles + /assigned-vehicle/latest
+│   └── CustomerController.java        — /api/customer/rentals + /assigned-vehicles + /assigned-vehicle/latest + /release-vehicle + /request-vehicle + /available-vehicles + /switch-to-auto
 ├── config/
 │   └── AppLocations.java              — DEFAULT_CITY (Chennai) + SUPPORTED_CITIES
 └── component/                         — Startup + simulation
@@ -302,8 +304,8 @@ frontend/src/app/
 ### User Endpoints (All Authenticated)
 | Method | Endpoint             | Description                              | Auth     |
 |--------|----------------------|------------------------------------------|----------|
-| GET    | /api/user/profile    | Get logged-in user's profile             | Any role |
-| PUT    | /api/user/location   | Update logged-in user's active location  | Any role |
+| GET    | /api/user/profile    | Get logged-in user's profile (+ isAssigned) | Any role |
+| PUT    | /api/user/location   | Update location (blocked for owners; blocked for assigned customers) | Any role |
 
 ### Owner Endpoints (OWNER role only)
 | Method | Endpoint                           | Description                              |
@@ -322,6 +324,10 @@ frontend/src/app/
 | GET    | /api/owner/peak-speeds             | Top 5 peak speeds today                  |
 | GET    | /api/owner/alerts                  | Owner fleet activities / alerts (recent) |
 | PUT    | /api/owner/alerts/{id}/read        | Mark an alert as read                    |
+| PUT    | /api/owner/alerts/mark-all-read    | Mark all owner alerts as read            |
+| GET    | /api/owner/assignment-requests     | List pending assignment requests         |
+| POST   | /api/owner/assignment-requests/{id}/approve | Approve an assignment request   |
+| POST   | /api/owner/assignment-requests/{id}/reject  | Reject an assignment request    |
 
 ### Driver Endpoints (CUSTOMER role)
 | Method | Endpoint                                    | Description                    |
@@ -336,6 +342,13 @@ frontend/src/app/
 | GET    | /api/customer/rentals                | Customer's rentals                       |
 | GET    | /api/customer/assigned-vehicles      | Vehicles assigned to the customer        |
 | GET    | /api/customer/assigned-vehicle/latest| Latest telemetry for assigned vehicle    |
+| POST   | /api/customer/release-vehicle        | Release assigned vehicle                 |
+| POST   | /api/customer/request-vehicle/{vehicleId} | Submit assignment request for a vehicle |
+| GET    | /api/customer/available-vehicles     | List available vehicles in customer area |
+| POST   | /api/customer/switch-to-auto         | Clear manual control, resume auto mode   |
+| GET    | /api/customer/alerts                 | Alerts for the customer's assigned vehicle |
+| PUT    | /api/customer/alerts/{id}/read       | Mark a customer vehicle alert as read    |
+| GET    | /api/customer/pending-requests       | List customer's pending assignment requests |
 
 ---
 
@@ -410,3 +423,111 @@ npm start
 - **Transactional owner mutations:** Add/delete/assign/unassign endpoints are now transactional to prevent partial updates when activity logging fails.
 - **Owner alerts restored:** `/api/owner/alerts` now returns data correctly after table creation and successful activity writes.
 - **Final cleanup:** Suppressed a local Java null-analysis false-positive in owner add-vehicle flow so the Problems view remains clean.
+
+### Session 5 (2026-04-12)
+
+#### Backend Changes
+
+41. **Active Rentals counter fixed:** `VehicleService.getFleetAnalytics()` now counts vehicles with a non-null `assignedCustomer` instead of querying the legacy `Rental` table. The `RentalRepository` dependency was removed from the service.
+
+42. **Telemetry simulation: rented vehicles only.** `VehicleJourneySimulator.simulateTick()` now checks `vehicle.getAssignedCustomer() != null`. Rented vehicles get full live speed/temp/GPS drift. Unassigned vehicles record static GPS readings with speed = 0 and temperature = 70°C; no console output or alert logging for them.
+
+43. **Mark All Alerts as Read:** New `PUT /api/owner/alerts/mark-all-read` endpoint. `FleetActivityService.markAllRead(ownerId)` sets `is_read = true` on all unread activities for the owner.
+
+44. **Owner location locked:** `UserController.updateLocation()` now rejects `PUT /api/user/location` for users with role `OWNER`, returning `400 "Owner location is locked after registration"`.
+
+45. **Customer location rules:** `UserController.updateLocation()` also rejects location changes for customers who have an assigned vehicle, returning `400 "Cannot change location while assigned to a vehicle"`. Unassigned customers may freely change location.
+
+46. **User profile includes `isAssigned`:** `GET /api/user/profile` now returns `{ username, role, location, isAssigned }` where `isAssigned` is true when the customer has at least one assigned vehicle.
+
+47. **Username in AuthResponse:** Added `username` field to `AuthResponse` DTO. Both `/api/auth/login` and `/api/auth/register` now return the username so the frontend stores it in localStorage.
+
+48. **AssignmentRequest entity:** New JPA entity `AssignmentRequest` with fields `id`, `customer` (FK → CustomerDetails), `vehicle` (FK → Vehicle), `owner` (FK → OwnerDetails), `status` (PENDING/APPROVED/REJECTED), `createdAt`, `resolvedAt`. Table: `assignment_requests`.
+
+49. **AssignmentRequestRepository:** Spring Data JPA interface with queries for listing by owner/status, finding duplicates, and cascade-deleting by vehicle id.
+
+50. **Customer assignment request endpoint:** `POST /api/customer/request-vehicle/{vehicleId}` — validates customer is unassigned, vehicle is in the customer's location, vehicle is available (status ACTIVE, no current assignment), and no duplicate pending request exists. Creates an `AssignmentRequest` with status PENDING.
+
+51. **Customer available vehicles endpoint:** `GET /api/customer/available-vehicles` — returns all vehicles with status ACTIVE, no assigned customer, and matching the customer's location.
+
+52. **Owner assignment request management:**
+    - `GET /api/owner/assignment-requests` — returns pending requests for the owner's vehicles (customerUsername, vehicleVin, vehicleMake, vehicleModel, vehicleId, status, createdAt).
+    - `POST /api/owner/assignment-requests/{id}/approve` — approves the request: unassigns any existing vehicle from the customer, assigns the requested vehicle, sets status to APPROVED, logs a fleet activity.
+    - `POST /api/owner/assignment-requests/{id}/reject` — rejects the request, sets status to REJECTED, logs a fleet activity.
+
+53. **Customer release vehicle endpoint:** `POST /api/customer/release-vehicle` — releases the customer's assigned vehicle (sets assignedCustomer to null, status to ACTIVE), clears manual control state, logs fleet activity.
+
+54. **Customer switch-to-auto endpoint:** `POST /api/customer/switch-to-auto` — clears the manual control state for the customer's assigned vehicle, returning it to automated telemetry mode.
+
+55. **VehicleControlService.clearManualControl():** New method that removes manual control and throttle entries from the in-memory maps for a given vehicle id.
+
+56. **Vehicle delete cascade:** `OwnerController.deleteVehicle()` now also deletes `AssignmentRequest` rows for the vehicle before deleting readings and the vehicle itself.
+
+#### Frontend Changes
+
+57. **Username displayed globally:** `AuthResponse` interface updated with `username`. Login and register components store username in localStorage. `AppComponent` shows `👤 {username}` badge in the navbar when logged in.
+
+58. **Owner dashboard greeting:** Owner HTML header shows "Welcome, {username}" on the right side.
+
+59. **Customer dashboard greeting:** Customer HTML header shows "Welcome, {username}" alongside the LIVE badge.
+
+60. **Location selector locked for owners:** `AppComponent` fetches `GET /api/user/profile` on init. If role is OWNER, `isLocationLocked = true` — the location dropdown button shows a 🔒 icon, click does nothing, and the dropdown never opens. If role is CUSTOMER and `isAssigned` is true, location is also locked.
+
+61. **Mark All as Read button:** `AlertListComponent` gains `@Input() showMarkAllRead` and `@Output() markAllRead`. When enabled and there are unread alerts, a blue "✓ Mark All as Read" button appears above the alert list. Owner fleet alerts section passes `[showMarkAllRead]="true"` and `(markAllRead)="markAllAlertsRead()"`.
+
+62. **Owner assignment requests section:** New "📋 Pending Assignment Requests" section in owner HTML, visible when `assignmentRequests.length > 0`. Each request shows customer username, vehicle info, and Approve/Reject buttons. Data loaded via `getOwnerAssignmentRequests()` on each poll cycle.
+
+63. **Customer available vehicles section:** When unassigned, customer dashboard shows a "🚙 Available Vehicles in Your Area" list with vehicle details and a "📩 Request Assignment" button per vehicle. `availableVehicles` loaded from `GET /api/customer/available-vehicles`.
+
+64. **Customer release vehicle (double-confirm):** Assigned vehicle banner gains a "↩ Release Vehicle" button. First click shows "Are you sure?" with "Yes, Release" and "Cancel". Second confirmation calls `POST /api/customer/release-vehicle`, clears local state, stops polling, and reloads available vehicles.
+
+65. **Switch to Auto button:** When `controlMode === 'manual'`, a "↻ Switch to Auto" button appears next to the MANUAL/AUTO badge. Clicking calls `POST /api/customer/switch-to-auto`, clears manual state on backend, and resets `controlMode` to `'auto'` on frontend without requiring a page refresh.
+
+#### API Endpoint Updates
+
+| Method | Endpoint                                     | Description                              | Auth         |
+|--------|----------------------------------------------|------------------------------------------|--------------|
+| PUT    | /api/owner/alerts/mark-all-read              | Mark all owner alerts as read            | OWNER        |
+| GET    | /api/owner/assignment-requests               | List pending assignment requests         | OWNER        |
+| POST   | /api/owner/assignment-requests/{id}/approve  | Approve an assignment request            | OWNER        |
+| POST   | /api/owner/assignment-requests/{id}/reject   | Reject an assignment request             | OWNER        |
+| POST   | /api/customer/release-vehicle                | Release assigned vehicle                 | CUSTOMER     |
+| POST   | /api/customer/request-vehicle/{vehicleId}    | Submit assignment request for a vehicle  | CUSTOMER     |
+| GET    | /api/customer/available-vehicles             | List available vehicles in customer area | CUSTOMER     |
+| POST   | /api/customer/switch-to-auto                 | Clear manual control, resume auto mode   | CUSTOMER     |
+
+### Session 6 (2026-04-12)
+
+#### Backend Changes
+
+66. **Speed alert threshold lowered:** `AlertService.evaluateAndGetAlertLevel()` WARNING threshold changed from `speed >= 80` to `speed >= 70` km/h. CRITICAL thresholds remain at speed ≥ 110 and temperature ≥ 110.
+
+67. **Customer alerts endpoint:** New `GET /api/customer/alerts` endpoint in `CustomerController`. Returns the 50 most recent fleet activities for the customer's assigned vehicle, enabling persistent alert history in the customer dashboard's Vehicle Alerts panel.
+
+68. **Customer alert mark-read endpoint:** New `PUT /api/customer/alerts/{id}/read` endpoint in `CustomerController`. Marks a specific alert as read, with vehicle-ownership validation to prevent cross-customer access.
+
+69. **Customer pending requests endpoint:** New `GET /api/customer/pending-requests` endpoint in `CustomerController`. Returns the customer's pending assignment requests (vehicleId, vehicleVin, status) so the frontend can track which vehicles already have outstanding requests.
+
+70. **FleetActivityRepository query:** Added `findTop50ByVehicle_IdOrderByCreatedAtDesc(Long vehicleId)` — Spring Data derived query that returns the 50 most recent activities for a specific vehicle.
+
+71. **FleetActivityService new methods:**
+    - `listForVehicleDirect(Long vehicleId)` — retrieves alerts scoped to a single vehicle (used by customer alerts endpoint).
+    - `markReadByVehicle(Long activityId, Long vehicleId)` — marks an alert as read with vehicle-ownership guard.
+
+#### Frontend Changes
+
+72. **Login state hydration fix:** `AppComponent` rewritten to subscribe to `Router.events` filtered to `NavigationEnd`. On every navigation (including post-login redirect), `hydrateFromLocalStorage()` re-reads `username`, `location`, and role from localStorage and updates the navbar immediately — no page refresh required.
+
+73. **Customer request button disabled state:** `CustomerComponent` now tracks `pendingRequestVehicleIds: Set<number>`. On load, `getCustomerPendingRequests()` populates the set. After a successful request, the vehicle id is added to the set immediately. Template shows a disabled amber "⏳ Requested" badge for vehicles in the set, replacing the active "📩 Request Assignment" button.
+
+74. **Customer location-switch vehicle filtering:** `CustomerComponent.ngOnInit()` starts a 1-second polling interval that checks `localStorage.getItem('location')` against `_lastCheckedLocation`. When the location changes (unassigned customer uses the navbar selector), `loadAvailableVehicles()` is called automatically to refresh the list with vehicles matching the new area.
+
+75. **ApiService: getCustomerPendingRequests():** New method calling `GET /api/customer/pending-requests` — returns the customer's pending assignment request list for tracking request button state.
+
+#### API Endpoint Updates
+
+| Method | Endpoint                              | Description                                          | Auth     |
+|--------|---------------------------------------|------------------------------------------------------|----------|
+| GET    | /api/customer/alerts                  | Alerts for the customer's assigned vehicle           | CUSTOMER |
+| PUT    | /api/customer/alerts/{id}/read        | Mark a customer vehicle alert as read                | CUSTOMER |
+| GET    | /api/customer/pending-requests        | List customer's pending assignment requests          | CUSTOMER |

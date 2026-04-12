@@ -13,6 +13,10 @@ export class OwnerComponent implements OnInit, OnDestroy {
   peakSpeeds: VehiclePeakSpeed[] = [];
   fleetAlerts: Alert[] = [];
   pollInterval: any;
+  username = '';
+
+  // Assignment Requests
+  assignmentRequests: any[] = [];
 
   // Vehicle detail popup
   showDetailModal = false;
@@ -140,6 +144,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
   constructor(private readonly apiService: ApiService) {}
 
   ngOnInit(): void {
+    this.username = localStorage.getItem('username') || '';
     this.loadData();
     this.pollInterval = setInterval(() => this.loadData(), 5000);
   }
@@ -168,6 +173,11 @@ export class OwnerComponent implements OnInit, OnDestroy {
 
     this.apiService.getOwnerAllAlerts().subscribe({
       next: (data) => this.fleetAlerts = data,
+      error: () => {}
+    });
+
+    this.apiService.getOwnerAssignmentRequests().subscribe({
+      next: (data) => this.assignmentRequests = data,
       error: () => {}
     });
   }
@@ -291,6 +301,30 @@ export class OwnerComponent implements OnInit, OnDestroy {
 
   onVehicleAlertRead(alertId: number): void {
     this.onFleetAlertRead(alertId);
+  }
+
+  markAllAlertsRead(): void {
+    this.apiService.ownerMarkAllAlertsRead().subscribe({
+      next: () => this.loadData()
+    });
+  }
+
+  get unreadAlertCount(): number {
+    return this.fleetAlerts.filter(a => !a.isRead).length;
+  }
+
+  approveRequest(reqId: number): void {
+    this.apiService.ownerApproveRequest(reqId).subscribe({
+      next: () => this.loadData(),
+      error: (err) => alert(err.error?.message || 'Failed to approve request')
+    });
+  }
+
+  rejectRequest(reqId: number): void {
+    this.apiService.ownerRejectRequest(reqId).subscribe({
+      next: () => this.loadData(),
+      error: (err) => alert(err.error?.message || 'Failed to reject request')
+    });
   }
 
   get selectedIsOverspeeding(): boolean {

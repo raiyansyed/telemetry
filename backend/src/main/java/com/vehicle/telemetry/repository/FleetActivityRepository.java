@@ -15,6 +15,8 @@ public interface FleetActivityRepository extends JpaRepository<FleetActivity, Lo
 
     List<FleetActivity> findTop100ByOwner_IdOrderByCreatedAtDesc(Long ownerId);
 
+    List<FleetActivity> findTop50ByVehicle_IdOrderByCreatedAtDesc(Long vehicleId);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM FleetActivity f WHERE f.vehicle.id = :vehicleId")

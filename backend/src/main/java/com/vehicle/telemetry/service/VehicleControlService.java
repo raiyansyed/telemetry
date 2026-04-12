@@ -78,4 +78,12 @@ public class VehicleControlService {
     public double computeTemperature(double speed) {
         return 70.0 + (speed * 0.35) + (Math.random() * 3 - 1.5);
     }
+
+    /**
+     * Clears manual control for a vehicle, returning it to auto mode.
+     */
+    public void clearManualControl(Long vehicleId) {
+        manualControlMap.remove(vehicleId);
+        throttleMap.remove(vehicleId);
+    }
 }

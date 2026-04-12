@@ -4,8 +4,6 @@ import com.vehicle.telemetry.dto.FleetAnalytics;
 import com.vehicle.telemetry.dto.VehiclePeakSpeed;
 import com.vehicle.telemetry.entity.Vehicle;
 import com.vehicle.telemetry.entity.VehicleReading;
-import com.vehicle.telemetry.enums.RentalStatus;
-import com.vehicle.telemetry.repository.RentalRepository;
 import com.vehicle.telemetry.repository.VehicleReadingRepository;
 import com.vehicle.telemetry.repository.VehicleRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,13 +21,16 @@ public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final VehicleReadingRepository vehicleReadingRepository;
-    private final RentalRepository rentalRepository;
 
     public FleetAnalytics getFleetAnalytics(Long ownerId) {
         Double avgSpeed = vehicleReadingRepository.getAverageSpeedByOwner(ownerId);
         Double avgTemp = vehicleReadingRepository.getAverageTemperatureByOwner(ownerId);
-        long vehicleCount = vehicleRepository.findByOwnerId(ownerId).size();
-        long activeRentals = rentalRepository.findByOwnerIdAndStatus(ownerId, RentalStatus.ACTIVE).size();
+        List<Vehicle> ownerVehicles = vehicleRepository.findByOwnerId(ownerId);
+        long vehicleCount = ownerVehicles.size();
+        // Count vehicles that have an assigned customer (status RENTED) — not legacy rental rows
+        long activeRentals = ownerVehicles.stream()
+                .filter(v -> v.getAssignedCustomer() != null)
+                .count();
 
         return FleetAnalytics.builder()
                 .averageSpeed(avgSpeed != null ? formatToTwoDecimals(avgSpeed) : 0.0)

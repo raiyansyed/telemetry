@@ -158,6 +158,7 @@ export class RegisterComponent implements OnInit {
         localStorage.setItem('token', res.token);
         localStorage.setItem('role', res.role);
         localStorage.setItem('location', res.location || this.form.location);
+        localStorage.setItem('username', res.username || this.form.username);
         this.loading = false;
         this.router.navigate([`/${res.role.toLowerCase()}`]);
       },

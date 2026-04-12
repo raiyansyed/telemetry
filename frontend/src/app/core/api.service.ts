@@ -6,6 +6,7 @@ export interface AuthResponse {
   token: string;
   role: string;
   location: string;
+  username: string;
 }
 
 export interface FleetAnalytics {
@@ -217,6 +218,49 @@ export class ApiService {
 
   customerMarkAlertRead(alertId: number): Observable<any> {
     return this.http.put(`${this.baseUrl}/customer/alerts/${alertId}/read`, {});
+  }
+
+  // --- Owner: Mark All Alerts Read ---
+  ownerMarkAllAlertsRead(): Observable<any> {
+    return this.http.put(`${this.baseUrl}/owner/alerts/mark-all-read`, {});
+  }
+
+  // --- Owner: Assignment Requests ---
+  getOwnerAssignmentRequests(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/owner/assignment-requests`);
+  }
+
+  ownerApproveRequest(requestId: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/owner/assignment-requests/${requestId}/approve`, {});
+  }
+
+  ownerRejectRequest(requestId: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/owner/assignment-requests/${requestId}/reject`, {});
+  }
+
+  // --- Customer: Release Vehicle ---
+  customerReleaseVehicle(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/customer/release-vehicle`, {});
+  }
+
+  // --- Customer: Request Vehicle ---
+  customerRequestVehicle(vehicleId: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/customer/request-vehicle/${vehicleId}`, {});
+  }
+
+  // --- Customer: Available Vehicles ---
+  getCustomerAvailableVehicles(): Observable<Vehicle[]> {
+    return this.http.get<Vehicle[]>(`${this.baseUrl}/customer/available-vehicles`);
+  }
+
+  // --- Customer: Pending Requests ---
+  getCustomerPendingRequests(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/customer/pending-requests`);
+  }
+
+  // --- Customer: Switch to Auto ---
+  customerSwitchToAuto(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/customer/switch-to-auto`, {});
   }
 
   getCustomerHourly(): Observable<HourlyData> {

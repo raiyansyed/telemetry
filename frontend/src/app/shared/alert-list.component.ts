@@ -7,32 +7,40 @@ import { Alert } from '../core/api.service';
     <div *ngIf="!alerts || alerts.length === 0" class="text-center py-8 text-[var(--muted)]">
       No alerts found
     </div>
-    <div *ngIf="alerts && alerts.length > 0" class="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-1">
-      <div
-        *ngFor="let alert of alerts"
-        class="flex items-center gap-4 p-4 rounded-lg border border-[var(--border)] bg-black/5 dark:bg-black/20"
-        [ngClass]="{
-          'border-l-4 border-l-red-500': alert.type === 'CRITICAL',
-          'border-l-4 border-l-yellow-500': alert.type === 'WARNING',
-          'border-l-4 border-l-blue-500': alert.type === 'INFO',
-          'opacity-50': alert.isRead
-        }"
-      >
-        <div class="text-2xl">
-          {{ alert.type === 'CRITICAL' ? '🔴' : alert.type === 'WARNING' ? '🟡' : '🔵' }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm text-[var(--text)]">{{ alert.message }}</div>
-          <div *ngIf="showPlate && alert.licensePlate" class="text-xs text-blue-400 mt-0.5">{{ alert.licensePlate }}</div>
-          <div class="text-xs text-[var(--muted)] mt-0.5">{{ formatTime(alert.triggeredAt) }}</div>
-        </div>
-        <button
-          *ngIf="!alert.isRead"
-          (click)="markRead.emit(alert.id)"
-          class="text-xs px-3 py-1.5 border border-[var(--border)] rounded text-[var(--muted)] hover:border-green-500 hover:text-green-500 transition whitespace-nowrap"
-        >
-          ✓ Read
+    <div *ngIf="alerts && alerts.length > 0">
+      <div *ngIf="showMarkAllRead && hasUnread" class="flex justify-end mb-3">
+        <button (click)="markAllRead.emit()"
+          class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+          ✓ Mark All as Read
         </button>
+      </div>
+      <div class="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-1">
+        <div
+          *ngFor="let alert of alerts"
+          class="flex items-center gap-4 p-4 rounded-lg border border-[var(--border)] bg-black/5 dark:bg-black/20"
+          [ngClass]="{
+            'border-l-4 border-l-red-500': alert.type === 'CRITICAL',
+            'border-l-4 border-l-yellow-500': alert.type === 'WARNING',
+            'border-l-4 border-l-blue-500': alert.type === 'INFO',
+            'opacity-50': alert.isRead
+          }"
+        >
+          <div class="text-2xl">
+            {{ alert.type === 'CRITICAL' ? '🔴' : alert.type === 'WARNING' ? '🟡' : '🔵' }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm text-[var(--text)]">{{ alert.message }}</div>
+            <div *ngIf="showPlate && alert.licensePlate" class="text-xs text-blue-400 mt-0.5">{{ alert.licensePlate }}</div>
+            <div class="text-xs text-[var(--muted)] mt-0.5">{{ formatTime(alert.triggeredAt) }}</div>
+          </div>
+          <button
+            *ngIf="!alert.isRead"
+            (click)="markRead.emit(alert.id)"
+            class="text-xs px-3 py-1.5 border border-[var(--border)] rounded text-[var(--muted)] hover:border-green-500 hover:text-green-500 transition whitespace-nowrap"
+          >
+            ✓ Read
+          </button>
+        </div>
       </div>
     </div>
   `,
@@ -41,10 +49,16 @@ import { Alert } from '../core/api.service';
 export class AlertListComponent {
   @Input() alerts: Alert[] = [];
   @Input() showPlate: boolean = false;
+  @Input() showMarkAllRead: boolean = false;
   @Output() markRead = new EventEmitter<number>();
+  @Output() markAllRead = new EventEmitter<void>();
 
   formatTime(ts: string): string {
     if (!ts) return '';
     return new Date(ts).toLocaleString();
+  }
+
+  get hasUnread(): boolean {
+    return this.alerts?.some(a => !a.isRead) ?? false;
   }
 }

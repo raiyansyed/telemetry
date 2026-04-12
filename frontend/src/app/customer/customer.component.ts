@@ -11,6 +11,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
   rentals: Rental[] = [];
   activeRental: Rental | null = null;
   assignedVehicles: Vehicle[] = [];
+  username = '';
 
   // Live telemetry
   telemetry: VehicleReading | null = null;
@@ -25,6 +26,15 @@ export class CustomerComponent implements OnInit, OnDestroy {
   isBraking = false;
   throttleLevel = 0.5;
   controlMode: 'auto' | 'manual' = 'auto';
+
+  // Release vehicle double-confirm
+  releaseStep: 0 | 1 | 2 = 0; // 0=idle, 1=first confirm, 2=processing
+
+  // Available vehicles for unassigned customers
+  availableVehicles: Vehicle[] = [];
+  requestLoading = false;
+  pendingRequestVehicleIds: Set<number> = new Set();
+  private locationCheckInterval: any;
 
   get vehicleId(): number {
     // Prefer assigned vehicle, then rental vehicle
@@ -76,11 +86,24 @@ export class CustomerComponent implements OnInit, OnDestroy {
   constructor(private readonly apiService: ApiService) {}
 
   ngOnInit(): void {
+    this.username = localStorage.getItem('username') || '';
     this.loadInitialData();
+    // Poll for location changes (when customer switches city in navbar)
+    this.locationCheckInterval = setInterval(() => {
+      if (!this.hasVehicle) {
+        const currentLoc = localStorage.getItem('location') || '';
+        if (currentLoc !== this._lastCheckedLocation) {
+          this._lastCheckedLocation = currentLoc;
+          this.loadAvailableVehicles();
+        }
+      }
+    }, 1000);
   }
+  private _lastCheckedLocation = localStorage.getItem('location') || '';
 
   ngOnDestroy(): void {
     if (this.pollInterval) { clearInterval(this.pollInterval); }
+    if (this.locationCheckInterval) { clearInterval(this.locationCheckInterval); }
     this.stopAccelerate();
     this.stopBrake();
   }
@@ -92,6 +115,8 @@ export class CustomerComponent implements OnInit, OnDestroy {
         this.assignedVehicles = data;
         if (this.assignedVehicles.length > 0) {
           this.startLivePolling();
+        } else {
+          this.loadAvailableVehicles();
         }
       },
       error: () => {}
@@ -107,6 +132,24 @@ export class CustomerComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  private loadAvailableVehicles(): void {
+    this.apiService.getCustomerAvailableVehicles().subscribe({
+      next: (data) => this.availableVehicles = data,
+      error: () => {}
+    });
+    // Also load pending requests to disable already-requested buttons
+    this.apiService.getCustomerPendingRequests().subscribe({
+      next: (data: any[]) => {
+        this.pendingRequestVehicleIds = new Set(data.map(r => r.vehicleId));
+      },
+      error: () => {}
+    });
+  }
+
+  isVehicleRequested(vehicleId: number): boolean {
+    return this.pendingRequestVehicleIds.has(vehicleId);
   }
 
   private startLivePolling(): void {
@@ -230,5 +273,64 @@ export class CustomerComponent implements OnInit, OnDestroy {
 
   private sendControl(action: string): void {
     this.apiService.controlVehicle(this.vehicleId, action, this.throttleLevel).subscribe();
+  }
+
+  // ---- Release Vehicle (double confirm) ----
+  initiateRelease(): void {
+    this.releaseStep = 1;
+  }
+
+  cancelRelease(): void {
+    this.releaseStep = 0;
+  }
+
+  confirmRelease(): void {
+    this.releaseStep = 2;
+    this.apiService.customerReleaseVehicle().subscribe({
+      next: () => {
+        this.releaseStep = 0;
+        this.assignedVehicles = [];
+        this.latestReading = null;
+        this.telemetry = null;
+        this.readings = [];
+        this.controlMode = 'auto';
+        if (this.pollInterval) {
+          clearInterval(this.pollInterval);
+          this.pollInterval = null;
+        }
+        this.loadAvailableVehicles();
+      },
+      error: (err) => {
+        this.releaseStep = 0;
+        alert(err.error?.message || 'Failed to release vehicle');
+      }
+    });
+  }
+
+  // ---- Request Vehicle ----
+  requestVehicle(vehicleId: number): void {
+    this.requestLoading = true;
+    this.apiService.customerRequestVehicle(vehicleId).subscribe({
+      next: () => {
+        this.requestLoading = false;
+        this.pendingRequestVehicleIds.add(vehicleId);
+      },
+      error: (err) => {
+        this.requestLoading = false;
+        alert(err.error?.message || 'Failed to submit request');
+      }
+    });
+  }
+
+  // ---- Switch to Auto ----
+  switchToAuto(): void {
+    this.apiService.customerSwitchToAuto().subscribe({
+      next: () => {
+        this.controlMode = 'auto';
+        this.isAccelerating = false;
+        this.isBraking = false;
+      },
+      error: () => {}
+    });
   }
 }

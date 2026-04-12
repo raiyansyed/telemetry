@@ -98,6 +98,7 @@ export class LoginComponent {
         localStorage.setItem('token', res.token);
         localStorage.setItem('role', res.role);
         localStorage.setItem('location', res.location || '');
+        localStorage.setItem('username', res.username || this.username);
         this.loading = false;
         this.router.navigate([`/${res.role.toLowerCase()}`]);
       },

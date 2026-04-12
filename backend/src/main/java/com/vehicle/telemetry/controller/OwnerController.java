@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class OwnerController {
     private final VehicleRepository vehicleRepository;
     private final CustomerDetailsRepository customerDetailsRepository;
     private final VehicleReadingRepository vehicleReadingRepository;
+    private final AssignmentRequestRepository assignmentRequestRepository;
 
     @GetMapping("/analytics")
     public ResponseEntity<FleetAnalytics> getAnalytics(Principal principal) {
@@ -111,6 +113,7 @@ public class OwnerController {
         }
 
         String vin = vehicle.getVin();
+        assignmentRequestRepository.deleteByVehicleId(id);
         fleetActivityService.deleteForVehicle(id);
         vehicleReadingRepository.deleteByVehicleId(id);
         vehicleRepository.delete(vehicle);
@@ -165,6 +168,90 @@ public class OwnerController {
         OwnerDetails owner = resolveOwner(principal);
         fleetActivityService.markRead(id, owner.getId());
         return ResponseEntity.ok(Map.of("status", "read"));
+    }
+
+    @PutMapping("/alerts/mark-all-read")
+    public ResponseEntity<?> markAllAlertsRead(Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        fleetActivityService.markAllRead(owner.getId());
+        return ResponseEntity.ok(Map.of("status", "all_read"));
+    }
+
+    // ---- Assignment Requests Management ----
+
+    @GetMapping("/assignment-requests")
+    public ResponseEntity<?> getAssignmentRequests(Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        List<AssignmentRequest> requests = assignmentRequestRepository.findByOwner_IdAndStatusOrderByCreatedAtDesc(owner.getId(), "PENDING");
+        return ResponseEntity.ok(requests.stream().map(r -> Map.of(
+                "id", r.getId(),
+                "customerUsername", r.getCustomer().getUser().getUsername(),
+                "vehicleVin", r.getVehicle().getVin(),
+                "vehicleMake", r.getVehicle().getMake(),
+                "vehicleModel", r.getVehicle().getModel(),
+                "vehicleId", r.getVehicle().getId(),
+                "status", r.getStatus(),
+                "createdAt", r.getCreatedAt().toString()
+        )).collect(Collectors.toList()));
+    }
+
+    @PostMapping("/assignment-requests/{id}/approve")
+    @Transactional
+    public ResponseEntity<?> approveAssignmentRequest(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        AssignmentRequest req = assignmentRequestRepository.findById(id).orElse(null);
+        if (req == null || !req.getOwner().getId().equals(owner.getId())) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!"PENDING".equals(req.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Request is no longer pending"));
+        }
+
+        Vehicle vehicle = req.getVehicle();
+        CustomerDetails customer = req.getCustomer();
+
+        // Unassign any existing vehicle from this customer
+        List<Vehicle> existing = vehicleRepository.findByAssignedCustomerId(customer.getId());
+        for (Vehicle other : existing) {
+            other.setAssignedCustomer(null);
+            other.setStatus(VehicleStatus.ACTIVE);
+            vehicleRepository.save(other);
+        }
+
+        vehicle.setAssignedCustomer(customer);
+        vehicle.setStatus(VehicleStatus.RENTED);
+        vehicleRepository.save(vehicle);
+
+        req.setStatus("APPROVED");
+        req.setResolvedAt(LocalDateTime.now());
+        assignmentRequestRepository.save(req);
+
+        fleetActivityService.log(owner, vehicle, vehicle.getVin(),
+                "Assignment request approved: @" + customer.getUser().getUsername(), "INFO");
+
+        return ResponseEntity.ok(Map.of("status", "approved"));
+    }
+
+    @PostMapping("/assignment-requests/{id}/reject")
+    @Transactional
+    public ResponseEntity<?> rejectAssignmentRequest(@PathVariable Long id, Principal principal) {
+        OwnerDetails owner = resolveOwner(principal);
+        AssignmentRequest req = assignmentRequestRepository.findById(id).orElse(null);
+        if (req == null || !req.getOwner().getId().equals(owner.getId())) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!"PENDING".equals(req.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Request is no longer pending"));
+        }
+
+        req.setStatus("REJECTED");
+        req.setResolvedAt(LocalDateTime.now());
+        assignmentRequestRepository.save(req);
+
+        fleetActivityService.log(owner, req.getVehicle(), req.getVehicle().getVin(),
+                "Assignment request rejected: @" + req.getCustomer().getUser().getUsername(), "INFO");
+
+        return ResponseEntity.ok(Map.of("status", "rejected"));
     }
 
     /**

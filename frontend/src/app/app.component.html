@@ -13,12 +13,14 @@
           <!-- Location Selector -->
           <div *ngIf="isLoggedIn" class="relative">
             <button (click)="toggleLocationMenu()"
-              class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] hover:border-blue-400 transition">
+              class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] transition"
+              [ngClass]="isLocationLocked ? 'opacity-70 cursor-default' : 'hover:border-blue-400 cursor-pointer'">
               <span>📍</span>
               <span>{{ activeLocation || 'Set Location' }}</span>
-              <span class="text-[var(--muted)]">▾</span>
+              <span *ngIf="isLocationLocked" class="text-[var(--muted)] text-[10px]">🔒</span>
+              <span *ngIf="!isLocationLocked" class="text-[var(--muted)]">▾</span>
             </button>
-            <div *ngIf="showLocationMenu"
+            <div *ngIf="showLocationMenu && !isLocationLocked"
               class="absolute right-0 mt-2 w-48 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 py-1 max-h-64 overflow-y-auto">
               <button *ngFor="let loc of locations"
                 (click)="changeLocation(loc)"
@@ -29,6 +31,9 @@
             </div>
           </div>
 
+          <span *ngIf="isLoggedIn && username" class="text-xs font-semibold px-3 py-1 rounded-full border border-[var(--border)] text-[var(--text)] bg-[var(--bg)]">
+            👤 {{ username }}
+          </span>
           <span *ngIf="isLoggedIn" class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-[var(--border)] text-[var(--muted)]">
             {{ userRole }}
           </span>
