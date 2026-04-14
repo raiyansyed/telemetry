@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pom.xml - Maven Project Object Model (the build configuration file).
+
+  WHAT IS MAVEN?
+  Maven is a build tool for Java projects. It does three main things:
+  1. Downloads all the libraries (dependencies) your project needs.
+  2. Compiles your Java source code into .class files.
+  3. Packages everything into a runnable JAR file.
+
+  HOW TO USE:
+  - mvn clean install    → Clean old build + compile + package the app.
+  - mvn spring-boot:run  → Compile and start the Spring Boot server.
+
+  PARENT: spring-boot-starter-parent (v3.2.4) provides default configuration
+  and dependency version management for all Spring Boot libraries.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
@@ -19,60 +35,83 @@
   </properties>
   <dependencies>
 
+    <!-- Health checks & monitoring endpoints (e.g., /actuator/health) -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
 
+    <!-- Core web framework: REST controllers, HTTP handling, embedded Tomcat server -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
+
+    <!-- Database ORM: JPA/Hibernate for mapping Java objects to database tables -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
+
+    <!-- Authentication & authorization: login, JWT filter, role-based access control -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
+
+    <!-- Input validation: @NotNull, @Valid, etc. for request body validation -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
+
+    <!-- MySQL JDBC driver: lets Java talk to the MySQL database -->
+    <!-- scope=runtime: only needed when the app runs, not at compile time -->
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
       <scope>runtime</scope>
     </dependency>
+
+    <!-- Lombok: generates boilerplate code (getters, setters, constructors) at compile time -->
+    <!-- optional=true: other projects depending on this won't inherit Lombok -->
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <optional>true</optional>
     </dependency>
+
+    <!-- Testing framework: JUnit 5 + Spring test utilities -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- Security testing: helpers for testing authenticated endpoints -->
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
     
-    <!-- JWT Dependencies -->
+    <!-- JWT Dependencies: Three libraries that work together for JSON Web Tokens -->
+    <!-- jjwt-api: The public API (interfaces) for creating and verifying JWTs -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
       <version>${jjwt.version}</version>
     </dependency>
+
+    <!-- jjwt-impl: The implementation (actual code) behind the JWT API -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-impl</artifactId>
       <version>${jjwt.version}</version>
       <scope>runtime</scope>
     </dependency>
+
+    <!-- jjwt-jackson: Lets JWT library use Jackson for JSON serialization -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-jackson</artifactId>
@@ -81,6 +120,9 @@
     </dependency>
   </dependencies>
 
+  <!-- BUILD CONFIGURATION -->
+  <!-- spring-boot-maven-plugin: packages the app as an executable JAR with embedded Tomcat -->
+  <!-- Lombok is excluded from the final JAR since it's only needed at compile time -->
   <build>
     <plugins>
       <plugin>

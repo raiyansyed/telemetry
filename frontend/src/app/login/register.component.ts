@@ -1,3 +1,33 @@
+/**
+ * RegisterComponent - The account creation page.
+ *
+ * This component uses an INLINE TEMPLATE (HTML written directly in this file).
+ * It allows new users to create either an OWNER or CUSTOMER account.
+ *
+ * FEATURES:
+ * - Username & password fields (required for all users).
+ * - Role dropdown: CUSTOMER (default) or OWNER.
+ * - Location dropdown: populated from GET /api/auth/locations (backend returns
+ *   the list of supported cities like Chennai, Mumbai, Delhi, etc.).
+ * - CONDITIONAL FIELDS based on role:
+ *   - If OWNER → shows "Company Name" input.
+ *   - If CUSTOMER → shows "License Number" input.
+ * - Form validation (username & password required).
+ * - Loading state while API call is in progress.
+ * - Error handling (shows backend error message, e.g., "Username already exists").
+ *
+ * REGISTRATION FLOW:
+ * 1. User fills in the form and clicks "Create Account".
+ * 2. register() method sends POST /api/auth/register with the form data.
+ * 3. Backend creates User + OwnerDetails or CustomerDetails records.
+ * 4. Backend returns { token, role, location, username } (auto-login).
+ * 5. Token + user info stored in localStorage.
+ * 6. Router navigates to /{role} dashboard.
+ *
+ * ON INIT:
+ * - Fetches supported locations from the backend to populate the dropdown.
+ * - Falls back to ['Chennai'] if the API call fails.
+ */
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';

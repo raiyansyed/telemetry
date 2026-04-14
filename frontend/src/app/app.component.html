@@ -1,3 +1,27 @@
+<!--
+  app.component.html - The root layout template (shown on EVERY page).
+
+  STRUCTURE:
+  1. NAVBAR (sticky top bar):
+     - Logo + "Vehicle Telemetry" title (links to home).
+     - Location selector dropdown (only shown when logged in).
+       Lets the user switch cities; updates localStorage and reloads the page.
+     - Theme toggle switch (light/dark mode, animated sun↔moon icon).
+     - Logout button (only shown when logged in).
+
+  2. CONTENT AREA:
+     - <router-outlet> is where Angular renders the current page's component
+       based on the URL (LoginComponent, OwnerComponent, CustomerComponent, etc.).
+
+  CONDITIONAL RENDERING:
+  - *ngIf="isLoggedIn" → Location selector, logout button only appear after login.
+  - The navbar is always visible (even on the login page).
+
+  STYLING:
+  - Uses Tailwind CSS utility classes for layout.
+  - CSS variables (var(--bg), var(--text), etc.) for theme support.
+  - The location dropdown has a click-outside overlay to close it.
+-->
 <div class="min-h-screen bg-[var(--bg)]">
   <!-- Navbar -->
   <nav

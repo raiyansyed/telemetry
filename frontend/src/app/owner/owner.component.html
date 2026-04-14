@@ -1,39 +1,97 @@
+<!--
+  ============================================================================
+  OWNER COMPONENT TEMPLATE — Fleet Owner Dashboard
+  ============================================================================
+  This is the main dashboard view for a FLEET OWNER user.
+  It allows owners to:
+    1. View fleet-wide analytics (total vehicles, active rentals, avg speed/temp)
+    2. Manage vehicles (add, delete, assign, unassign)
+    3. View & approve/reject customer assignment requests
+    4. Click on any vehicle for a live detail popup (GPS, speed gauge, temp gauge, hourly chart)
+    5. See peak speed leaderboard (top 5 fastest vehicles today)
+    6. Monitor fleet alerts (overspeeding, assignment requests, etc.)
+    7. View real-time speed & temperature trend charts for the entire fleet
+
+  The component polls the backend every 5 seconds to keep data live.
+  CSS uses Tailwind utility classes and CSS variables (--text, --bg, --card, --border, --muted)
+  for theming support (light/dark mode).
+  ============================================================================
+-->
+
+<!-- ROOT CONTAINER: Wraps the entire dashboard. "space-y-6" adds vertical spacing (1.5rem) between each major section -->
 <div class="space-y-6">
+
+  <!-- ==================== HEADER ROW ==================== -->
+  <!-- Flexbox row: title on the left, welcome message on the right -->
   <div class="flex items-center justify-between">
+    <!-- Dashboard title — extra bold, themed text color -->
     <h2 class="text-3xl font-extrabold text-[var(--text)]">
       🏢 Fleet Owner Dashboard
     </h2>
+    <!-- *ngIf="username" — Only shows the welcome message if the username exists (user is logged in) -->
+    <!-- "username" is read from localStorage in ngOnInit() -->
     <span *ngIf="username" class="text-sm font-semibold text-[var(--muted)]"
       >Welcome, <span class="text-[var(--text)]">{{ username }}</span></span
     >
   </div>
 
-  <!-- ====== ADD VEHICLE MODAL ====== -->
+  <!--
+    ============================================================================
+    SECTION 1: ADD VEHICLE MODAL
+    ============================================================================
+    A fullscreen overlay modal that appears when the owner clicks "Add Vehicle".
+    Controlled by the boolean `showAddModal` in the component.
+    Contains a form with fields: VIN, Make, Model, Year.
+    On submit, calls submitAddVehicle() which POSTs to the backend API.
+  -->
+  <!-- *ngIf="showAddModal" — Only renders this entire modal when showAddModal is true -->
+  <!-- "fixed inset-0" — Positions the backdrop to cover the entire viewport -->
+  <!-- "bg-black/50 backdrop-blur-sm" — Semi-transparent black overlay with a slight blur effect -->
+  <!-- "flex items-center justify-center" — Centers the modal dialog in the middle of the screen -->
+  <!-- "z-50" — High z-index so the modal appears above all other content -->
+  <!-- (click)="closeAddModal()" — Clicking the backdrop (outside the modal) closes it -->
   <div
     *ngIf="showAddModal"
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
     (click)="closeAddModal()"
   >
+    <!-- MODAL DIALOG BOX -->
+    <!-- "max-w-md" — Limits the modal width to 28rem (448px) -->
+    <!-- (click)="$event.stopPropagation()" — Prevents clicks inside the modal from bubbling up to the backdrop (which would close it) -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 w-full max-w-md shadow-2xl"
       (click)="$event.stopPropagation()"
     >
+      <!-- Modal title -->
       <h3 class="text-xl font-bold text-[var(--text)] mb-4">
         ➕ Add New Vehicle
       </h3>
+
+      <!-- ERROR MESSAGE — Only displayed if addError string is not empty -->
+      <!-- Shows validation or server errors (e.g., "VIN already exists") -->
       <div
         *ngIf="addError"
         class="bg-red-50 border border-red-200 text-red-600 text-sm text-center p-3 rounded-lg mb-4"
       >
         {{ addError }}
       </div>
+
+      <!-- ADD VEHICLE FORM -->
+      <!-- (ngSubmit)="submitAddVehicle()" — When the form is submitted (Enter key or Submit button), calls submitAddVehicle() -->
       <form (ngSubmit)="submitAddVehicle()">
+        <!-- "space-y-3" — Adds 0.75rem vertical gap between each form field -->
         <div class="space-y-3">
+
+          <!-- VIN FIELD -->
           <div>
+            <!-- Label styled as uppercase, small, muted text -->
             <label
               class="block text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-1"
               >VIN</label
             >
+            <!-- [(ngModel)]="addForm.vin" — Two-way data binding: syncs this input's value with the addForm.vin property in the component -->
+            <!-- name="vin" — Required by Angular forms to register this control -->
+            <!-- required — HTML5 validation: form won't submit if this is empty -->
             <input
               [(ngModel)]="addForm.vin"
               name="vin"
@@ -43,11 +101,14 @@
               class="w-full px-4 py-2 border border-[var(--border)] rounded-lg bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          <!-- MAKE FIELD (e.g., Toyota, Honda) -->
           <div>
             <label
               class="block text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-1"
               >Make</label
             >
+            <!-- [(ngModel)]="addForm.make" — Two-way binding to addForm.make -->
             <input
               [(ngModel)]="addForm.make"
               name="make"
@@ -57,11 +118,14 @@
               class="w-full px-4 py-2 border border-[var(--border)] rounded-lg bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          <!-- MODEL FIELD (e.g., Camry, Civic) -->
           <div>
             <label
               class="block text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-1"
               >Model</label
             >
+            <!-- [(ngModel)]="addForm.model" — Two-way binding to addForm.model -->
             <input
               [(ngModel)]="addForm.model"
               name="model"
@@ -71,11 +135,15 @@
               class="w-full px-4 py-2 border border-[var(--border)] rounded-lg bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          <!-- YEAR FIELD (optional — no "required" attribute) -->
           <div>
             <label
               class="block text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-1"
               >Year</label
             >
+            <!-- [(ngModel)]="addForm.year" — Two-way binding to addForm.year -->
+            <!-- type="number" — Only allows numeric input -->
             <input
               [(ngModel)]="addForm.year"
               name="year"
@@ -85,7 +153,13 @@
             />
           </div>
         </div>
+
+        <!-- FORM ACTION BUTTONS -->
         <div class="flex gap-3 mt-5">
+          <!-- SUBMIT BUTTON -->
+          <!-- type="submit" — Triggers the (ngSubmit) event on the form -->
+          <!-- [disabled]="addLoading" — Disables the button while the API call is in progress to prevent double-submission -->
+          <!-- {{ addLoading ? "Adding…" : "Add Vehicle" }} — Shows "Adding…" text while loading, "Add Vehicle" otherwise -->
           <button
             type="submit"
             [disabled]="addLoading"
@@ -93,6 +167,9 @@
           >
             {{ addLoading ? "Adding…" : "Add Vehicle" }}
           </button>
+          <!-- CANCEL BUTTON -->
+          <!-- type="button" — Prevents this button from submitting the form -->
+          <!-- (click)="closeAddModal()" — Closes the modal without saving -->
           <button
             type="button"
             (click)="closeAddModal()"
@@ -105,19 +182,35 @@
     </div>
   </div>
 
-  <!-- ====== ASSIGN VEHICLE MODAL ====== -->
+  <!--
+    ============================================================================
+    SECTION 2: ASSIGN VEHICLE MODAL
+    ============================================================================
+    Fullscreen overlay modal that appears when the owner clicks "Assign" on a vehicle.
+    Lets the owner pick a customer/driver from a dropdown and assign the vehicle to them.
+    Supports "swap" mode — if a customer already has a vehicle, enabling swap will
+    unassign their old vehicle and assign this new one.
+    Controlled by the boolean `showAssignModal`.
+  -->
+  <!-- *ngIf="showAssignModal" — Only renders when the assign modal should be visible -->
+  <!-- (click)="closeAssignModal()" — Clicking backdrop closes the modal -->
   <div
     *ngIf="showAssignModal"
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
     (click)="closeAssignModal()"
   >
+    <!-- MODAL DIALOG — stops click propagation so clicking inside doesn't close the modal -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 w-full max-w-md shadow-2xl"
       (click)="$event.stopPropagation()"
     >
+      <!-- Modal title -->
       <h3 class="text-xl font-bold text-[var(--text)] mb-2">
         🔗 Assign Vehicle
       </h3>
+
+      <!-- Description text — shows which vehicle is being assigned -->
+      <!-- assignVehicle?.make and assignVehicle?.model — Safe navigation operator (?.) prevents errors if assignVehicle is null -->
       <p class="text-sm text-[var(--muted)] mb-4">
         Assign
         <span class="font-bold text-[var(--text)]"
@@ -126,6 +219,8 @@
         <span class="font-mono text-xs">({{ assignVehicle?.vin }})</span> to a
         customer/driver.
       </p>
+
+      <!-- Info note — explains that only customers in the same location as the vehicle are shown -->
       <p class="text-xs text-[var(--muted)] mb-3">
         Only customers registered in
         <span class="font-semibold text-[var(--text)]">{{
@@ -133,29 +228,43 @@
         }}</span>
         are listed.
       </p>
+
+      <!-- ERROR MESSAGE — shown if the assignment fails -->
       <div
         *ngIf="assignError"
         class="bg-red-50 border border-red-200 text-red-600 text-sm text-center p-3 rounded-lg mb-4"
       >
         {{ assignError }}
       </div>
+
+      <!-- ASSIGN FORM -->
+      <!-- (ngSubmit)="submitAssignVehicle()" — Calls the assign API when submitted -->
       <form (ngSubmit)="submitAssignVehicle()">
         <div>
+          <!-- Customer dropdown label -->
           <label
             class="block text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-1"
             >Customer</label
           >
+          <!-- CUSTOMER DROPDOWN SELECT -->
+          <!-- [(ngModel)]="assignSelectedUsername" — Two-way binding to the selected customer's username -->
+          <!-- required — Must select a customer before submitting -->
           <select
             [(ngModel)]="assignSelectedUsername"
             name="assignCustomer"
             required
             class="w-full px-4 py-2 border border-[var(--border)] rounded-lg bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
+            <!-- Default placeholder option — disabled so it can't be selected after initial load -->
             <option value="" disabled selected hidden>Select a customer</option>
+            <!-- *ngFor="let o of assignableCustomerOptions" — Loops through the filtered list of assignable customers -->
+            <!-- assignableCustomerOptions is a getter that filters out customers who already have a vehicle (unless swap mode is on) -->
+            <!-- [value]="o.username" — Sets the option's value to the customer's username -->
             <option
               *ngFor="let o of assignableCustomerOptions"
               [value]="o.username"
             >
+              <!-- Displays the username, and if swap mode is on AND the customer has another vehicle, shows which vehicle they'd swap from -->
               {{ o.username
               }}{{
                 assignSwap && o.hasOtherVehicle
@@ -164,6 +273,9 @@
               }}
             </option>
           </select>
+
+          <!-- WARNING MESSAGE — shown when swap is OFF but some customers are hidden because they already have vehicles -->
+          <!-- *ngIf="!assignSwap && hasCustomersNeedingSwap" — Only shows if swap is disabled AND there are customers with existing vehicles -->
           <p
             *ngIf="!assignSwap && hasCustomersNeedingSwap"
             class="text-xs text-amber-600 mt-2"
@@ -172,6 +284,11 @@
             Enable swap below to reassign them here.
           </p>
         </div>
+
+        <!-- SWAP CHECKBOX -->
+        <!-- [(ngModel)]="assignSwap" — Two-way binding: toggles the swap mode on/off -->
+        <!-- When enabled, the dropdown shows ALL customers (even those with existing vehicles) -->
+        <!-- The backend will unassign their old vehicle and assign this new one -->
         <label class="flex items-center gap-2 mt-4 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -183,7 +300,12 @@
             >Swap: unassign their current vehicle and assign this one</span
           >
         </label>
+
+        <!-- ASSIGN / CANCEL BUTTONS -->
         <div class="flex gap-3 mt-5">
+          <!-- ASSIGN BUTTON -->
+          <!-- [disabled]="assignLoading" — Disabled while API call is in progress -->
+          <!-- Shows "Assigning…" while loading, "Assign" otherwise -->
           <button
             type="submit"
             [disabled]="assignLoading"
@@ -191,6 +313,7 @@
           >
             {{ assignLoading ? "Assigning…" : "Assign" }}
           </button>
+          <!-- CANCEL BUTTON — closes modal without saving -->
           <button
             type="button"
             (click)="closeAssignModal()"
@@ -203,11 +326,20 @@
     </div>
   </div>
 
-  <!-- ====== ASSIGNMENT REQUESTS ====== -->
+  <!--
+    ============================================================================
+    SECTION 3: PENDING ASSIGNMENT REQUESTS
+    ============================================================================
+    Shows a list of assignment requests from customers who want to be assigned to
+    one of the owner's vehicles. The owner can Approve or Reject each request.
+    Only visible when there are pending requests (assignmentRequests.length > 0).
+  -->
+  <!-- *ngIf="assignmentRequests.length > 0" — Only renders this section if there's at least one pending request -->
   <div
     *ngIf="assignmentRequests.length > 0"
     class="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden"
   >
+    <!-- Section header with title and description -->
     <div class="px-6 py-4 border-b border-[var(--border)]">
       <h3 class="text-lg font-bold text-[var(--text)]">
         📋 Pending Assignment Requests
@@ -216,29 +348,43 @@
         Customers requesting to be assigned to your vehicles.
       </p>
     </div>
+
+    <!-- REQUEST LIST — each request separated by a horizontal divider -->
+    <!-- "divide-y divide-[var(--border)]" — Adds a themed border between each child div -->
     <div class="divide-y divide-[var(--border)]">
+      <!-- *ngFor="let req of assignmentRequests" — Loops through each assignment request -->
       <div
         *ngFor="let req of assignmentRequests"
         class="px-6 py-4 flex items-center gap-4"
       >
+        <!-- REQUEST INFO (left side) -->
         <div class="flex-1">
+          <!-- Customer's username who made the request -->
           <div class="font-semibold text-[var(--text)]">
             👤 {{ req.customerUsername }}
           </div>
+          <!-- Which vehicle they're requesting — shows make, model, and VIN -->
           <div class="text-sm text-[var(--muted)]">
             Requesting: {{ req.vehicleMake }} {{ req.vehicleModel }} ({{
               req.vehicleVin
             }})
           </div>
+          <!-- Timestamp of when the request was created -->
           <div class="text-xs text-[var(--muted)]">{{ req.createdAt }}</div>
         </div>
+
+        <!-- ACTION BUTTONS (right side) -->
         <div class="flex gap-2">
+          <!-- APPROVE BUTTON — calls approveRequest() with the request ID -->
+          <!-- This will assign the vehicle to the customer on the backend -->
           <button
             (click)="approveRequest(req.id)"
             class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
           >
             ✓ Approve
           </button>
+          <!-- REJECT BUTTON — calls rejectRequest() with the request ID -->
+          <!-- This will deny the customer's request -->
           <button
             (click)="rejectRequest(req.id)"
             class="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold"
@@ -250,21 +396,39 @@
     </div>
   </div>
 
-  <!-- ====== VEHICLE DETAIL POPUP MODAL ====== -->
+  <!--
+    ============================================================================
+    SECTION 4: VEHICLE DETAIL POPUP MODAL
+    ============================================================================
+    A large fullscreen overlay modal that shows detailed live telemetry for a
+    single selected vehicle. Includes:
+      - Vehicle info header (make, model, year, VIN, LIVE indicator)
+      - 5 stat cards (GPS location, driving status, assigned driver, location, status)
+      - 2 live gauges (speed & engine temperature) using the <app-gauge> component
+      - Hourly telemetry line chart (speed & temperature over today's hours)
+    Data is polled every 3 seconds while this modal is open.
+    Controlled by `showDetailModal` and `selectedVehicle`.
+  -->
+  <!-- *ngIf="showDetailModal && selectedVehicle" — Only renders if the modal should be shown AND a vehicle is selected -->
+  <!-- (click)="closeDetail()" — Clicking the backdrop closes the detail modal -->
   <div
     *ngIf="showDetailModal && selectedVehicle"
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
     (click)="closeDetail()"
   >
+    <!-- MODAL DIALOG — large width (max-w-4xl = 56rem), scrollable if content overflows 90% of viewport height -->
+    <!-- (click)="$event.stopPropagation()" — Prevents closing when clicking inside the modal -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
       (click)="$event.stopPropagation()"
     >
-      <!-- Header -->
+      <!-- ===== MODAL HEADER (sticky — stays at top when scrolling) ===== -->
       <div
         class="sticky top-0 bg-[var(--card)] border-b border-[var(--border)] px-8 py-5 flex justify-between items-center z-10"
       >
+        <!-- Left side: car logo + vehicle name + LIVE badge -->
         <div class="flex items-center gap-3">
+          <!-- Car logo image -->
           <span class="text-4xl">
             <img
               class="h-10 w-10 object-contain"
@@ -273,21 +437,27 @@
             />
           </span>
           <div>
+            <!-- Vehicle make, model, and year — e.g., "Toyota Camry (2024)" -->
             <h3 class="text-xl font-bold text-[var(--text)]">
               {{ selectedVehicle.make }} {{ selectedVehicle.model }} ({{
                 selectedVehicle.year
               }})
             </h3>
+            <!-- Vehicle VIN displayed in monospace font -->
             <p class="text-sm font-mono text-[var(--muted)]">
               {{ selectedVehicle.vin }}
             </p>
           </div>
+          <!-- LIVE INDICATOR BADGE — pulsing red dot to show data is being streamed in real-time -->
+          <!-- "animate-pulse" — Tailwind CSS animation that makes the badge gently pulse -->
           <span
             class="inline-flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/30 px-3 py-1 rounded-full text-xs font-bold tracking-wider animate-pulse"
           >
             🔴 LIVE
           </span>
         </div>
+
+        <!-- CLOSE BUTTON (right side of header) — closes the detail modal -->
         <button
           (click)="closeDetail()"
           class="text-sm px-4 py-2 border border-[var(--border)] rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition text-[var(--muted)]"
@@ -296,13 +466,20 @@
         </button>
       </div>
 
+      <!-- ===== MODAL BODY ===== -->
       <div class="p-8 space-y-6">
-        <!-- Vehicle stats cards -->
+
+        <!-- ---- 5 VEHICLE STAT CARDS (responsive grid) ---- -->
+        <!-- "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" — 2 columns on mobile, 3 on small screens, 5 on large screens -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+
+          <!-- STAT CARD 1: GPS Location -->
           <div
             class="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl text-center"
           >
             <div class="text-2xl mb-1">📍</div>
+            <!-- *ngIf="selectedLatest" — Only shows coordinates if we have the latest reading data -->
+            <!-- toFixed(4) — Rounds lat/long to 4 decimal places for display -->
             <div
               class="text-sm font-bold text-[var(--text)]"
               *ngIf="selectedLatest"
@@ -310,17 +487,23 @@
               {{ selectedLatest.latitude?.toFixed(4) }},
               {{ selectedLatest.longitude?.toFixed(4) }}
             </div>
+            <!-- Fallback — shows a dash if no latest reading is available yet -->
             <div *ngIf="!selectedLatest" class="text-sm text-[var(--muted)]">
               —
             </div>
             <div class="text-xs text-[var(--muted)] mt-1">GPS Location</div>
           </div>
+
+          <!-- STAT CARD 2: Driving Status (Overspeeding or Normal) -->
           <div
             class="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl text-center"
           >
+            <!-- selectedIsOverspeeding is a getter that returns true if speed > 80 km/h -->
+            <!-- Shows ⚠️ warning emoji if overspeeding, ✅ checkmark if normal -->
             <div class="text-2xl mb-1">
               {{ selectedIsOverspeeding ? "⚠️" : "✅" }}
             </div>
+            <!-- [ngClass] — Dynamically applies red text if overspeeding, green if normal -->
             <div
               class="text-sm font-bold"
               [ngClass]="
@@ -331,19 +514,26 @@
             </div>
             <div class="text-xs text-[var(--muted)] mt-1">Driving Status</div>
           </div>
+
+          <!-- STAT CARD 3: Assigned Driver -->
           <div
             class="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl text-center"
           >
             <div class="text-2xl mb-1">👤</div>
+            <!-- getAssignedUsername() returns the assigned customer's username, or empty string if unassigned -->
+            <!-- || "Unassigned" — Fallback text if no driver is assigned -->
             <div class="text-sm font-bold text-[var(--text)]">
               {{ getAssignedUsername(selectedVehicle) || "Unassigned" }}
             </div>
             <div class="text-xs text-[var(--muted)] mt-1">Assigned Driver</div>
           </div>
+
+          <!-- STAT CARD 4: Operating Location (city/region where the vehicle operates) -->
           <div
             class="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl text-center"
           >
             <div class="text-2xl mb-1">🏙️</div>
+            <!-- Shows the vehicle's assigned location, or "—" if not set -->
             <div class="text-sm font-bold text-[var(--text)]">
               {{ selectedVehicle.location || "—" }}
             </div>
@@ -351,10 +541,14 @@
               Operating location
             </div>
           </div>
+
+          <!-- STAT CARD 5: Vehicle Status (ACTIVE / RENTED / INACTIVE / MAINTENANCE) -->
           <div
             class="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl text-center"
           >
             <div class="text-2xl mb-1">📋</div>
+            <!-- [ngClass] — Applies different background/text color based on the vehicle's status -->
+            <!-- Green for ACTIVE, Blue for RENTED, Gray for INACTIVE, Yellow for MAINTENANCE -->
             <span
               class="px-2.5 py-1 text-xs rounded-full font-bold"
               [ngClass]="{
@@ -374,8 +568,16 @@
           </div>
         </div>
 
-        <!-- Live Gauges -->
+        <!-- ---- LIVE GAUGES (Speed & Engine Temperature) ---- -->
+        <!-- Uses the reusable <app-gauge> component from SharedModule -->
+        <!-- "flex-wrap" — Wraps gauges to next line on small screens -->
         <div class="flex flex-wrap justify-center gap-8">
+          <!-- SPEED GAUGE -->
+          <!-- [value] — Current speed from the latest reading; uses ?? 0 (nullish coalescing) to default to 0 if no data -->
+          <!-- [max]="200" — Maximum value on the gauge dial (200 km/h) -->
+          <!-- unit="km/h" — Unit label displayed on the gauge -->
+          <!-- label="Speed" — Title label for this gauge -->
+          <!-- type="speed" — Tells the gauge component to use speed-specific styling/colors -->
           <app-gauge
             [value]="selectedLatest?.speed ?? 0"
             [max]="200"
@@ -383,6 +585,9 @@
             label="Speed"
             type="speed"
           ></app-gauge>
+          <!-- ENGINE TEMPERATURE GAUGE -->
+          <!-- [max]="150" — Maximum value on the gauge (150°C) -->
+          <!-- type="temp" — Tells the gauge component to use temperature-specific styling/colors -->
           <app-gauge
             [value]="selectedLatest?.temperature ?? 0"
             [max]="150"
@@ -392,14 +597,22 @@
           ></app-gauge>
         </div>
 
-        <!-- Hourly Chart -->
+        <!-- ---- HOURLY TELEMETRY CHART ---- -->
+        <!-- Line chart showing average speed and temperature for each hour of today -->
         <div
           class="bg-[var(--bg)] border border-[var(--border)] p-6 rounded-xl"
         >
           <h4 class="text-lg font-bold text-[var(--text)] mb-4">
             📈 Hourly Telemetry
           </h4>
+          <!-- *ngIf="selectedHourly" — Only renders the chart canvas when hourly data has been loaded -->
+          <!-- "h-64" — Fixed height of 16rem (256px) for the chart container -->
           <div class="h-64" *ngIf="selectedHourly">
+            <!-- ng2-charts canvas directive -->
+            <!-- baseChart — Directive from ng2-charts that turns this <canvas> into a Chart.js chart -->
+            <!-- [data]="detailChartData" — Binds the chart data (labels + datasets with speed & temp arrays) -->
+            <!-- [options]="detailChartOptions" — Binds chart configuration (axes, legends, tooltips, etc.) -->
+            <!-- [type]="'line'" — Specifies this is a line chart -->
             <canvas
               baseChart
               [data]="detailChartData"
@@ -407,6 +620,7 @@
               [type]="'line'"
             ></canvas>
           </div>
+          <!-- Fallback message when no hourly data is available yet -->
           <div
             *ngIf="!selectedHourly"
             class="text-center py-8 text-[var(--muted)]"
@@ -418,20 +632,39 @@
     </div>
   </div>
 
-  <!-- ====== FLEET SUMMARY CARDS ====== -->
+  <!--
+    ============================================================================
+    SECTION 5: FLEET SUMMARY CARDS
+    ============================================================================
+    Four overview cards showing fleet-wide KPIs:
+      1. Total Vehicles — how many vehicles the owner has
+      2. Active Rentals — how many are currently rented out
+      3. Avg Fleet Speed — average speed across all vehicles
+      4. Avg Engine Temp — average engine temperature across all vehicles
+    Data comes from the `analytics` object (FleetAnalytics type) loaded from the API.
+    These are always visible on the main dashboard.
+  -->
+  <!-- "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" — 1 column on mobile, 2 on medium, 4 on large screens -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+
+    <!-- CARD 1: Total Vehicles -->
+    <!-- "hover:shadow-md transition" — Subtle shadow increase on hover for interactivity feel -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm hover:shadow-md transition"
     >
+      <!-- Label — small uppercase text -->
       <div
         class="text-[var(--muted)] text-xs font-semibold uppercase tracking-wider"
       >
         Total Vehicles
       </div>
+      <!-- Value — analytics?.vehicleCount uses optional chaining; falls back to 0 if analytics is null -->
       <div class="text-4xl font-black mt-2 text-[var(--text)]">
         {{ analytics?.vehicleCount || 0 }}
       </div>
     </div>
+
+    <!-- CARD 2: Active Rentals -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm hover:shadow-md transition"
     >
@@ -440,10 +673,13 @@
       >
         Active Rentals
       </div>
+      <!-- Green text to indicate active/positive metric -->
       <div class="text-4xl font-black mt-2 text-green-500">
         {{ analytics?.activeRentals || 0 }}
       </div>
     </div>
+
+    <!-- CARD 3: Average Fleet Speed -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm hover:shadow-md transition"
     >
@@ -452,11 +688,14 @@
       >
         Avg Fleet Speed
       </div>
+      <!-- Blue text for speed metric; unit "km/h" shown in smaller muted text -->
       <div class="text-4xl font-black mt-2 text-blue-500">
         {{ analytics?.averageSpeed || 0 }}
         <span class="text-lg font-medium text-[var(--muted)]">km/h</span>
       </div>
     </div>
+
+    <!-- CARD 4: Average Engine Temperature -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm hover:shadow-md transition"
     >
@@ -465,6 +704,7 @@
       >
         Avg Engine Temp
       </div>
+      <!-- Orange text for temperature metric; unit "°C" shown in smaller muted text -->
       <div class="text-4xl font-black mt-2 text-orange-500">
         {{ analytics?.averageTemperature || 0 }}
         <span class="text-lg font-medium text-[var(--muted)]">°C</span>
@@ -472,10 +712,26 @@
     </div>
   </div>
 
-  <!-- ====== PEAK SPEED TODAY — TOP 5 VEHICLES (clickable cards) ====== -->
+  <!--
+    ============================================================================
+    SECTION 6: PEAK SPEED TODAY — TOP 5 VEHICLES
+    ============================================================================
+    Shows the top 5 vehicles with the highest peak speed recorded today.
+    Each vehicle is displayed as a clickable card showing:
+      - Car logo and rank number (#1, #2, etc.)
+      - Vehicle make, model, VIN
+      - Peak speed (color-coded: red ≥110, yellow ≥80, green <80)
+      - Average temperature
+      - GPS coordinates
+      - Assigned driver (if any)
+      - Timestamp of the peak reading
+    Clicking a card opens the Vehicle Detail Modal for that vehicle.
+    Data comes from the `peakSpeeds` array (VehiclePeakSpeed[]).
+  -->
   <div
     class="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden"
   >
+    <!-- Section header -->
     <div class="px-6 py-4 border-b border-[var(--border)]">
       <h3 class="text-lg font-bold text-[var(--text)]">
         🏎️ Peak Speed Today — Top 5 Vehicles
@@ -484,32 +740,51 @@
         Click a card for live temperature, speed, GPS, and rental status.
       </p>
     </div>
+
+    <!-- PEAK SPEED CARDS GRID -->
+    <!-- Responsive: 1 column on mobile, 2 on small, 3 on large, 5 on extra-large -->
     <div
       class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
     >
+      <!-- Each peak speed entry is a <button> for accessibility (keyboard-navigable, focusable) -->
+      <!-- *ngFor="let p of peakSpeeds; let i = index" — Loops through peak speeds; "i" is the 0-based index used for ranking -->
+      <!-- (click)="openPeakVehicleDetail(p)" — Opens the detail modal for this vehicle by finding it in the vehicles array -->
+      <!-- "hover:scale-[1.02]" — Slight scale-up on hover for interactive feel -->
       <button
         type="button"
         *ngFor="let p of peakSpeeds; let i = index"
         (click)="openPeakVehicleDetail(p)"
         class="text-left rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-4 hover:border-blue-400 hover:shadow-md hover:scale-[1.02] transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
+        <!-- Top row: car logo on the left, rank number on the right -->
         <div class="flex items-start justify-between gap-2 mb-2">
           <span class="text-3xl">
             <img class="h-10 w-10 object-contain" src="../../assets/CarLogo.png" alt="Car" />
           </span>
+          <!-- Rank number: #1, #2, #3, etc. (i+1 because i is 0-based) -->
           <span class="text-[var(--muted)] text-xs font-bold"
             >#{{ i + 1 }}</span
           >
         </div>
+
+        <!-- Vehicle make & model (e.g., "Toyota Camry") -->
         <div class="font-bold text-[var(--text)]">
           {{ p.make }} {{ p.model }}
         </div>
+        <!-- Vehicle VIN in monospace font -->
         <div class="text-xs font-mono text-[var(--muted)] mb-3">
           {{ p.vin }}
         </div>
+
+        <!-- Vehicle stats -->
         <div class="space-y-1.5 text-sm">
+          <!-- Peak speed with color coding -->
           <div class="flex justify-between gap-2">
             <span class="text-[var(--muted)]">Peak speed</span>
+            <!-- [ngClass] — Color-codes the speed value: -->
+            <!--   Red (text-red-500) if speed ≥ 110 km/h (dangerous) -->
+            <!--   Yellow (text-yellow-600) if speed ≥ 80 and < 110 km/h (caution) -->
+            <!--   Green (text-green-600) if speed < 80 km/h (safe) -->
             <span
               class="font-bold"
               [ngClass]="{
@@ -521,38 +796,54 @@
               {{ p.peakSpeed }} km/h
             </span>
           </div>
+
+          <!-- Average temperature -->
           <div class="flex justify-between gap-2">
             <span class="text-[var(--muted)]">Avg temp</span>
             <span class="font-medium text-[var(--text)]"
               >{{ p.avgTemperature }} °C</span
             >
           </div>
+
+          <!-- GPS coordinates — formatted using Angular's "number" pipe -->
+          <!-- "1.3-3" means: at least 1 integer digit, exactly 3 decimal places -->
           <div
             class="text-xs font-mono text-[var(--muted)] pt-1 border-t border-[var(--border)]"
           >
             📍 {{ p.latitude | number: "1.3-3" }},
             {{ p.longitude | number: "1.3-3" }}
           </div>
+
+          <!-- Assigned driver badge OR "Unassigned" text -->
           <div class="flex flex-wrap items-center gap-1 pt-1">
+            <!-- *ngIf="p.assignedDriverUsername" — Shows a blue badge with the driver's name if assigned -->
             <span
               *ngIf="p.assignedDriverUsername"
               class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full"
               >👤 {{ p.assignedDriverUsername }}</span
             >
+            <!-- *ngIf="!p.assignedDriverUsername" — Shows "Unassigned" text if no driver -->
             <span
               *ngIf="!p.assignedDriverUsername"
               class="text-xs text-[var(--muted)]"
               >Unassigned</span
             >
           </div>
+
+          <!-- Timestamp of when this peak speed reading was recorded -->
           <div class="text-[var(--muted)] text-[10px] leading-tight">
             {{ p.timestamp }}
           </div>
         </div>
+
+        <!-- "Open detail →" link text at the bottom of each card -->
         <div class="mt-3 text-xs font-semibold text-blue-600">
           Open detail →
         </div>
       </button>
+
+      <!-- EMPTY STATE — shown when there are no peak speed readings yet -->
+      <!-- "col-span-full" — Spans across all grid columns -->
       <div
         *ngIf="peakSpeeds.length === 0"
         class="col-span-full text-center py-8 text-[var(--muted)]"
@@ -562,16 +853,27 @@
     </div>
   </div>
 
-  <!-- ====== VEHICLES + FLEET ALERTS (side by side) ====== -->
+  <!--
+    ============================================================================
+    SECTION 7: VEHICLES TABLE + FLEET ALERTS (side by side)
+    ============================================================================
+    Two-column layout on large screens:
+      LEFT: Vehicle roster table with action buttons (View, Assign, Unassign, Delete)
+      RIGHT: Fleet alerts list using the shared <app-alert-list> component
+  -->
+  <!-- "grid-cols-1 lg:grid-cols-2" — Stacked on mobile, side-by-side on large screens -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Vehicle Roster with Actions -->
+
+    <!-- ===== LEFT COLUMN: VEHICLE ROSTER TABLE ===== -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden"
     >
+      <!-- Table header row: title on the left, "Add Vehicle" button on the right -->
       <div
         class="px-6 py-4 border-b border-[var(--border)] flex justify-between items-center"
       >
         <h3 class="text-lg font-bold text-[var(--text)]">🚙 Vehicles</h3>
+        <!-- (click)="openAddModal()" — Opens the Add Vehicle modal (Section 1 above) -->
         <button
           (click)="openAddModal()"
           class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
@@ -579,13 +881,19 @@
           ➕ Add Vehicle
         </button>
       </div>
+
+      <!-- EMPTY STATE — shown when the owner has no vehicles -->
       <div
         *ngIf="vehicles.length === 0"
         class="p-8 text-center text-[var(--muted)]"
       >
         No vehicles found
       </div>
+
+      <!-- VEHICLE TABLE — only shown when there are vehicles -->
+      <!-- *ngIf="vehicles.length > 0" — Renders the table only if the vehicles array is not empty -->
       <table *ngIf="vehicles.length > 0" class="w-full text-left text-sm">
+        <!-- TABLE HEADER — column names -->
         <thead class="bg-[var(--bg)] text-[var(--muted)]">
           <tr>
             <th class="px-4 py-3 font-semibold">VIN</th>
@@ -595,20 +903,31 @@
             <th class="px-4 py-3 font-semibold">Actions</th>
           </tr>
         </thead>
+
+        <!-- TABLE BODY — one row per vehicle -->
+        <!-- "divide-y divide-[var(--border)]" — Horizontal divider between rows -->
         <tbody class="divide-y divide-[var(--border)]">
+          <!-- *ngFor="let v of vehicles" — Loops through each vehicle in the owner's fleet -->
+          <!-- (click)="selectVehicle(v)" — Clicking anywhere on the row opens the detail modal for that vehicle -->
+          <!-- "cursor-pointer" — Changes cursor to pointer to indicate the row is clickable -->
           <tr
             *ngFor="let v of vehicles"
             class="hover:bg-[var(--bg)] transition cursor-pointer"
             (click)="selectVehicle(v)"
           >
+            <!-- VIN column — monospace font for the VIN identifier -->
             <td
               class="px-4 py-3 font-mono text-xs font-medium text-[var(--text)]"
             >
               {{ v.vin }}
             </td>
+
+            <!-- Make & Model column (e.g., "Toyota Camry") -->
             <td class="px-4 py-3 text-[var(--text)]">
               {{ v.make }} {{ v.model }}
             </td>
+
+            <!-- Status column — color-coded badge (same pattern as the detail modal) -->
             <td class="px-4 py-3">
               <span
                 class="px-2.5 py-1 text-xs rounded-full font-bold"
@@ -622,26 +941,38 @@
                 {{ v.status }}
               </span>
             </td>
+
+            <!-- Driver column — shows assigned driver's name or a dash if unassigned -->
             <td class="px-4 py-3">
+              <!-- *ngIf="getAssignedUsername(v)" — Shows driver name only if a driver is assigned -->
               <span
                 *ngIf="getAssignedUsername(v)"
                 class="text-xs font-semibold text-blue-600"
                 >👤 {{ getAssignedUsername(v) }}</span
               >
+              <!-- *ngIf="!getAssignedUsername(v)" — Shows "—" if no driver is assigned -->
               <span
                 *ngIf="!getAssignedUsername(v)"
                 class="text-xs text-[var(--muted)]"
                 >—</span
               >
             </td>
+
+            <!-- Actions column — row of action buttons -->
             <td class="px-4 py-3">
               <div class="flex gap-1.5">
+                <!-- VIEW BUTTON — opens vehicle detail modal -->
+                <!-- $event.stopPropagation() — Prevents the row click from also firing (avoids double-trigger) -->
                 <button
                   (click)="selectVehicle(v); $event.stopPropagation()"
                   class="text-xs px-2.5 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                 >
                   View
                 </button>
+
+                <!-- ASSIGN BUTTON — only shown if the vehicle has NO assigned driver -->
+                <!-- *ngIf="!getAssignedUsername(v)" — Conditional rendering based on assignment status -->
+                <!-- (click)="openAssignModal(v, $event)" — Opens the assign modal; passes the event so it can stopPropagation -->
                 <button
                   *ngIf="!getAssignedUsername(v)"
                   (click)="openAssignModal(v, $event)"
@@ -649,6 +980,10 @@
                 >
                   Assign
                 </button>
+
+                <!-- UNASSIGN BUTTON — only shown if the vehicle HAS an assigned driver -->
+                <!-- *ngIf="getAssignedUsername(v)" — Opposite condition of the Assign button -->
+                <!-- (click)="unassignVehicle(v, $event)" — Calls unassign with a confirmation prompt -->
                 <button
                   *ngIf="getAssignedUsername(v)"
                   (click)="unassignVehicle(v, $event)"
@@ -656,6 +991,9 @@
                 >
                   Unassign
                 </button>
+
+                <!-- DELETE BUTTON — permanently removes the vehicle and all its readings -->
+                <!-- (click)="deleteVehicle(v, $event)" — Shows a confirmation dialog, then deletes if confirmed -->
                 <button
                   (click)="deleteVehicle(v, $event)"
                   class="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
@@ -669,13 +1007,22 @@
       </table>
     </div>
 
-    <!-- Owner Fleet Alerts -->
+    <!-- ===== RIGHT COLUMN: OWNER FLEET ALERTS ===== -->
+    <!-- Uses the shared <app-alert-list> component to display alerts -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
     >
       <h3 class="text-lg font-bold text-[var(--text)] mb-4">
         🔔 Owner Fleet Alerts
       </h3>
+      <!-- <app-alert-list> — Reusable shared component that renders a list of alerts -->
+      <!-- [alerts]="combinedAlerts" — Passes the merged list of fleet alerts + assignment request alerts (sorted by newest first) -->
+      <!-- [showPlate]="true" — Tells the alert list to display the vehicle license plate / VIN -->
+      <!-- [showMarkAllRead]="true" — Shows a "Mark all as read" button at the top -->
+      <!-- (markRead)="onFleetAlertRead($event)" — Event emitter: when user clicks "mark read" on a single alert, calls onFleetAlertRead with the alert ID -->
+      <!-- (markAllRead)="markAllAlertsRead()" — Event emitter: when user clicks "mark all read", marks all alerts as read via API -->
+      <!-- (approve)="approveRequest($event)" — Event emitter: for assignment request alerts, approves the request -->
+      <!-- (reject)="rejectRequest($event)" — Event emitter: for assignment request alerts, rejects the request -->
       <app-alert-list
         [alerts]="combinedAlerts"
         [showPlate]="true"
@@ -688,12 +1035,30 @@
     </div>
   </div>
 
-  <!-- ====== CHARTS ====== -->
+  <!--
+    ============================================================================
+    SECTION 8: FLEET-WIDE TREND CHARTS
+    ============================================================================
+    Two side-by-side line charts showing real-time fleet-wide trends:
+      LEFT:  Speed Trends — average fleet speed over time
+      RIGHT: Temperature Trends — average engine temperature over time
+    Both charts use ng2-charts (Chart.js wrapper for Angular).
+    Data is updated every 5 seconds from the polling in loadData().
+    Chart configurations are defined in the component TypeScript file.
+  -->
+  <!-- "grid-cols-1 lg:grid-cols-2" — Stacked on mobile, side-by-side on large screens -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- LEFT: SPEED TRENDS CHART -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
     >
       <h3 class="text-lg font-bold mb-4 text-[var(--text)]">📈 Speed Trends</h3>
+      <!-- ng2-charts canvas -->
+      <!-- baseChart — Directive that initializes Chart.js on this canvas element -->
+      <!-- [data]="speedChartData" — Binds chart data (time labels on X-axis + speed values on Y-axis) -->
+      <!-- [options]="speedChartOptions" — Binds chart options (axis labels, scales, tooltips, legend config) -->
+      <!-- [type]="'line'" — Renders as a line chart -->
       <canvas
         baseChart
         [data]="speedChartData"
@@ -701,12 +1066,17 @@
         [type]="'line'"
       ></canvas>
     </div>
+
+    <!-- RIGHT: TEMPERATURE TRENDS CHART -->
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
     >
       <h3 class="text-lg font-bold mb-4 text-[var(--text)]">
         🌡️ Temperature Trends
       </h3>
+      <!-- Same ng2-charts setup but for temperature data -->
+      <!-- [data]="tempChartData" — Temperature values over time -->
+      <!-- [options]="tempChartOptions" — Temperature-specific axis labels and scales -->
       <canvas
         baseChart
         [data]="tempChartData"
@@ -715,4 +1085,6 @@
       ></canvas>
     </div>
   </div>
+
+<!-- END OF ROOT CONTAINER -->
 </div>

@@ -1,3 +1,18 @@
+﻿/*
+ * driver.component.scss - Styles for the Driver Dashboard.
+ *
+ * These styles are SCOPED to DriverComponent only (Angular component encapsulation).
+ * Identical to customer.component.scss because both dashboards share the same
+ * pedal button and speedometer design.
+ */
+
+/*
+ * .pedal-btn - Styles for the GAS and BRAKE control buttons.
+ * - cursor: pointer → shows a hand cursor on hover.
+ * - user-select: none → prevents text selection when clicking rapidly.
+ * - touch-action: manipulation → optimizes touch events on mobile.
+ * - &:active → shrinks slightly on press for visual feedback.
+ */
 .pedal-btn {
   cursor: pointer;
   user-select: none;
@@ -9,6 +24,9 @@
   }
 }
 
+/*
+ * .speedometer svg - Subtle drop shadow on the speedometer SVG gauge.
+ */
 .speedometer svg {
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
 }

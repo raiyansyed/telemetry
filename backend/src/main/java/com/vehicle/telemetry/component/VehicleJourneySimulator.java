@@ -20,8 +20,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * VehicleJourneySimulator - Background thread that generates live telemetry data every 3 seconds.
+ *
+ * This is the "heartbeat" of the application. Without this, there would be no live data.
+ *
+ * HOW IT WORKS:
+ * 1. On startup (after DatabaseSeedUtility), a new background thread is created.
+ * 2. The thread waits 5 seconds (to let the database finish initializing).
+ * 3. Then it enters an infinite loop, running every 3 seconds:
+ *    a. Load all vehicles from the database.
+ *    b. For each vehicle, calculate new speed, temperature, and GPS coordinates.
+ *    c. Save a VehicleReading to the database.
+ *    d. Check for alert conditions and log them if needed.
+ *
+ * TWO DRIVING MODES:
+ * - AUTO mode (default): Speed and temperature change randomly within ranges.
+ *   Speed: 0-130 km/h with random +/- 5 km/h per tick.
+ *   Temp: 60-120 C with random +/- 2 C per tick.
+ * - MANUAL mode: When a customer is controlling the vehicle via the GAS/BRAKE buttons,
+ *   speed and temperature are calculated by VehicleControlService instead.
+ *
+ * UNASSIGNED VEHICLES: If no customer is assigned, speed=0 and temp=70 (parked/idle).
+ *
+ * ALERT LOGGING: When speed or temperature crosses WARNING or CRITICAL thresholds,
+ * a FleetActivity log entry is created (but only when the alert LEVEL CHANGES,
+ * not every tick - to avoid spamming the alerts panel).
+ *
+ * INTERNAL STATE: Each vehicle has a VehicleState object that tracks its current
+ * speed, temperature, GPS position, and last alert level. This state lives in memory
+ * (not the database) and is reset on server restart.
+ *
+ * @Order(2) means this runs AFTER DatabaseSeedUtility (@Order(1)).
+ */
 @Component
-@Order(2)
+@Order(2)   // Run after DatabaseSeedUtility (Order=1)
 @RequiredArgsConstructor
 public class VehicleJourneySimulator implements CommandLineRunner {
 

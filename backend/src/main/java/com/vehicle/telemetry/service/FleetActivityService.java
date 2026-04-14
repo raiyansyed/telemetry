@@ -15,6 +15,24 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * FleetActivityService - Manages the creation and retrieval of fleet alert/activity logs.
+ *
+ * This service is the "notification system" of the app. Every important event gets logged here:
+ * - Vehicle added/removed from fleet
+ * - Customer assigned/unassigned
+ * - Speed/temperature alerts from the simulator
+ * - Assignment request approved/rejected
+ *
+ * The owner sees these in the "Fleet Alerts" panel, and customers see vehicle-specific
+ * alerts in their dashboard. Alerts can be marked as read (individually or all at once).
+ *
+ * TWO log() METHODS:
+ * - log(): used in controller methods where we have entity objects (owner, vehicle).
+ * - logByIds(): used in the simulator thread where we only have IDs (safer for non-request threads).
+ *   The simulator runs on a background thread that doesn't have access to the HTTP request context,
+ *   so we use getReferenceById() to create proxy references without loading full entities.
+ */
 @Service
 @RequiredArgsConstructor
 public class FleetActivityService {

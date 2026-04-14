@@ -17,11 +17,38 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * VehicleService - Core business logic for vehicle analytics, telemetry queries, and data aggregation.
+ *
+ * This service is the "brain" behind the owner dashboard's charts and statistics.
+ * It doesn't generate data (that's the simulator's job) - it QUERIES and TRANSFORMS existing data
+ * into formats the frontend can display.
+ *
+ * KEY FEATURES:
+ * 1. Fleet Analytics: calculates average speed, average temp, vehicle count, active rentals.
+ * 2. Fleet Trends: gets the 50 most recent readings for real-time fleet trend charts.
+ * 3. Peak Speeds: finds today's top 5 fastest vehicles for the leaderboard.
+ * 4. Hourly Aggregation: groups readings by hour for the vehicle detail popup chart.
+ * 5. Recent Readings: gets the last 20 readings for the driver/customer telemetry history chart.
+ *
+ * ANNOTATIONS:
+ * - @Service: marks this as a Spring-managed service bean.
+ * - @RequiredArgsConstructor: Lombok generates a constructor for final fields (dependency injection).
+ * - @Transactional(readOnly = true): optimizes database reads by telling Hibernate
+ *   "this method won't modify data" - allows performance optimizations.
+ */
 public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final VehicleReadingRepository vehicleReadingRepository;
 
+    /**
+     * Calculate fleet-wide summary statistics for the owner dashboard.
+     * Returns average speed, average temperature, vehicle count, and active rental count.
+     *
+     * @param ownerId The owner_details.id (NOT the user.id) of the fleet owner.
+     * @return FleetAnalytics DTO with the 4 summary numbers.
+     */
     public FleetAnalytics getFleetAnalytics(Long ownerId) {
         Double avgSpeed = vehicleReadingRepository.getAverageSpeedByOwner(ownerId);
         Double avgTemp = vehicleReadingRepository.getAverageTemperatureByOwner(ownerId);
@@ -40,14 +67,24 @@ public class VehicleService {
                 .build();
     }
 
+    /**
+     * Get the 20 most recent telemetry readings for a specific vehicle (newest first).
+     * Used by the driver/customer dashboard's "Telemetry History" chart.
+     */
     public List<VehicleReading> getRecentReadings(Long vehicleId) {
         return vehicleReadingRepository.findTop20ByVehicleIdOrderByTimestampDesc(vehicleId);
     }
 
+    /** Get the single most recent reading for a vehicle (for speedometer/gauge display). */
     public VehicleReading getLatestReading(Long vehicleId) {
         return vehicleReadingRepository.findFirstByVehicleIdOrderByTimestampDesc(vehicleId);
     }
 
+    /**
+     * Load all vehicles with their owner data for the simulator.
+     * Uses JOIN FETCH to avoid N+1 query problems (loads owners in same SQL query).
+     * @Transactional(readOnly = true) optimizes the database read.
+     */
     @Transactional(readOnly = true)
     public List<Vehicle> findAllVehiclesForSimulation() {
         return vehicleRepository.findAllJoinFetchOwner();
@@ -113,6 +150,14 @@ public class VehicleService {
      * Returns hourly aggregation for a specific vehicle (today's data).
      * Returns a map of { hours: [...], avgSpeeds: [...], avgTemps: [...] }
      */
+    /**
+     * Calculate hourly averages for a vehicle's speed and temperature today.
+     * Returns data formatted for Chart.js: arrays of hours, average speeds, and average temperatures.
+     * Used by the vehicle detail popup's hourly telemetry chart on the owner dashboard.
+     *
+     * EXAMPLE RETURN:
+     *   { "hours": [9, 10, 11], "avgSpeeds": [65.5, 72.3, 80.1], "avgTemps": [85.2, 89.1, 95.3] }
+     */
     public Map<String, Object> getHourlyAggregation(Long vehicleId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         List<VehicleReading> readings = vehicleReadingRepository.findByVehicleIdSince(vehicleId, startOfDay);
@@ -143,6 +188,7 @@ public class VehicleService {
         return result;
     }
 
+    /** Round a Double value to 2 decimal places (e.g., 85.6789 -> 85.68). */
     private Double formatToTwoDecimals(Double value) {
         return Math.round(value * 100.0) / 100.0;
     }

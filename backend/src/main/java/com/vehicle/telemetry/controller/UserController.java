@@ -14,6 +14,23 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * UserController - Handles user profile and location management.
+ *
+ * ENDPOINTS (all require JWT authentication):
+ *   GET  /api/user/profile   -> Returns the logged-in user's profile (username, role, location, isAssigned).
+ *   PUT  /api/user/location  -> Updates the user's city location.
+ *
+ * LOCATION RULES:
+ * - Owners CANNOT change their location after registration (locked permanently).
+ * - Customers can change location ONLY when they don't have an assigned vehicle.
+ *   (Because a vehicle is tied to a city, and you can't drive a Chennai vehicle from Mumbai.)
+ *
+ * HOW Principal WORKS:
+ * - Spring Security injects a Principal object into controller methods.
+ * - principal.getName() returns the username of the currently authenticated user.
+ * - This is extracted from the JWT token by JwtAuthenticationFilter.
+ */
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor

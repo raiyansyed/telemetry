@@ -1,3 +1,33 @@
+/**
+ * AlertListComponent - A reusable scrollable list of alerts/notifications.
+ *
+ * FEATURES:
+ * - Displays alerts with color-coded left borders: red (CRITICAL), yellow (WARNING), blue (INFO).
+ * - Read alerts appear faded (50% opacity).
+ * - Normal alerts have a "Read" button to mark them as read.
+ * - Assignment request alerts (isAssignmentRequest=true) show "Approve" and "Reject" buttons
+ *   instead of the "Read" button.
+ * - Optional "Mark All as Read" button at the top.
+ * - Scrollable container (max 400px height) for long alert lists.
+ *
+ * @Input() PROPERTIES:
+ * - alerts: the array of Alert objects to display
+ * - showPlate: whether to show the vehicle VIN/license plate on each alert
+ * - showMarkAllRead: whether to show the "Mark All as Read" button
+ *
+ * @Output() EVENTS (child -> parent communication):
+ * - markRead: emits the alert ID when the "Read" button is clicked
+ * - markAllRead: emits when the "Mark All as Read" button is clicked
+ * - approve: emits the request ID when "Approve" is clicked (assignment requests)
+ * - reject: emits the request ID when "Reject" is clicked (assignment requests)
+ *
+ * WHAT IS @Output()?
+ * - @Output() + EventEmitter sends events FROM this component TO its parent.
+ * - The parent listens with round brackets: (markRead)="onMarkRead($event)"
+ * - $event contains the emitted value (the alert ID number).
+ *
+ * USED BY: Owner dashboard (fleet alerts panel), Customer dashboard (vehicle alerts)
+ */
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { Alert } from '../core/api.service';
 

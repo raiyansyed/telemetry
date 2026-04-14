@@ -1,3 +1,36 @@
+/**
+ * DriverComponent - Standalone vehicle control & telemetry dashboard.
+ *
+ * This is a simplified driver dashboard that controls a HARDCODED vehicle (vehicleId = 1).
+ * Unlike the CustomerComponent which dynamically gets an assigned vehicle, this component
+ * is for direct demo/testing of vehicle controls.
+ *
+ * FEATURES:
+ * - Live speedometer gauge (SVG arc, 0-200 km/h, updates every 2 seconds).
+ * - Temperature gauge (horizontal bar, range 60-140°C).
+ * - Telemetry history chart (speed + temperature over time via Chart.js).
+ * - Manual driving controls: GAS / BRAKE buttons + keyboard support.
+ * - Throttle intensity slider (0-100%, controls how hard the vehicle accelerates).
+ * - Auto / Manual mode toggle.
+ *
+ * KEYBOARD CONTROLS:
+ * - W or ArrowUp → Accelerate (hold to keep accelerating).
+ * - S or ArrowDown or Space → Brake (hold to keep braking).
+ * - Release key → sends IDLE command (vehicle coasts / decelerates naturally).
+ *
+ * DATA FLOW:
+ * 1. Every 2 seconds, pollData() fetches:
+ *    - GET /api/driver/vehicle/1/latest → latest VehicleReading (speed, temp, GPS, alerts).
+ *    - GET /api/driver/vehicle/1/readings → last 20 readings for the chart.
+ * 2. sendControl() sends POST /api/driver/vehicle/1/control with action (ACCELERATE/BRAKE/IDLE).
+ * 3. The backend's VehicleJourneySimulator applies physics (acceleration/drag) and generates
+ *    new readings every 3 seconds.
+ *
+ * COMPUTED PROPERTIES (getters):
+ * - speedNeedleAngle: Maps speed (0-200) to rotation angle (-135° to +135°) for SVG gauge.
+ * - speedPercent: Speed as a percentage of 200 km/h (used for color coding).
+ * - tempPercent: Temperature mapped to 0-100% (range 60-140°C, used for bar width).
+ */
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { ApiService, VehicleReading } from '../core/api.service';
 

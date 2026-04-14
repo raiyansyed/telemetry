@@ -16,8 +16,36 @@ import java.time.LocalDateTime;
  * Runs once on startup when the database has no users: seeds demo owners, customers,
  * vehicles (Chennai), and one active assignment so the UI is never empty on first boot.
  */
+/**
+ * DatabaseSeedUtility - Seeds the database with demo data on first startup.
+ *
+ * WHAT IS CommandLineRunner?
+ * - CommandLineRunner is a Spring Boot interface with a run() method.
+ * - Any @Component that implements CommandLineRunner gets its run() method called
+ *   automatically when the application starts up.
+ * - @Order(1) means this runs BEFORE VehicleJourneySimulator (@Order(2)).
+ *
+ * WHAT GETS SEEDED (only if the database is empty):
+ * 1. One fleet owner account: username="owner", password="password"
+ *    - Company: "Chennai Fleet Co."
+ * 2. Five customer accounts: "customer", "customer1", "customer2", "customer3", "anynomo"
+ *    - All with password="password"
+ *    - All in Chennai location
+ * 3. Five vehicles: Toyota Camry, Honda Civic, Mahindra Thar, BMW X5, Mercedes C-Class
+ *    - All owned by the seeded owner
+ *    - Vehicle 1 (Toyota Camry) is pre-assigned to the "customer" account
+ * 4. One sample rental record for the "anynomo" user (legacy feature)
+ *
+ * WHY SEED DATA?
+ * - So the UI is never empty when you first start the application.
+ * - You can immediately log in as "owner"/"password" or "customer"/"password".
+ * - The Demo Credentials buttons on the login page use these accounts.
+ *
+ * SAFETY: The run() method checks userRepository.count() > 0 and returns early
+ * if any users exist. So this only seeds data on a completely fresh/empty database.
+ */
 @Component
-@Order(1)
+@Order(1)   // Run before VehicleJourneySimulator (Order=2)
 @RequiredArgsConstructor
 public class DatabaseSeedUtility implements CommandLineRunner {
 

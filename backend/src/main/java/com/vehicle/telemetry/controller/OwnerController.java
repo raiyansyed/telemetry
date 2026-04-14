@@ -26,6 +26,42 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * OwnerController - The main API for fleet owners. Handles vehicle management, analytics, alerts,
+ * and assignment request processing.
+ *
+ * This is the LARGEST controller with ~400 lines covering all owner dashboard functionality.
+ *
+ * ENDPOINTS (all require JWT with OWNER role):
+ *
+ * ANALYTICS & DATA:
+ *   GET /api/owner/analytics          -> Fleet-wide summary stats (avg speed, temp, counts)
+ *   GET /api/owner/trends             -> Last 50 readings for fleet trend charts
+ *   GET /api/owner/peak-speeds        -> Top 5 fastest vehicles today
+ *
+ * VEHICLE MANAGEMENT:
+ *   GET    /api/owner/vehicles             -> List all vehicles
+ *   POST   /api/owner/vehicles             -> Add a new vehicle
+ *   DELETE /api/owner/vehicles/{id}        -> Remove a vehicle (and all its data)
+ *   GET    /api/owner/vehicles/{id}/latest -> Latest telemetry reading for a vehicle
+ *   GET    /api/owner/vehicles/{id}/hourly -> Hourly aggregation chart data
+ *   GET    /api/owner/vehicles/{id}/alerts -> Alerts specific to a vehicle
+ *
+ * VEHICLE ASSIGNMENT:
+ *   GET  /api/owner/vehicles/{id}/assignment-options -> Eligible customers for assignment
+ *   POST /api/owner/vehicles/{id}/assign             -> Assign vehicle to a customer
+ *   POST /api/owner/vehicles/{id}/unassign           -> Remove customer from vehicle
+ *
+ * ALERTS:
+ *   GET /api/owner/alerts              -> All fleet alerts
+ *   PUT /api/owner/alerts/{id}/read    -> Mark one alert as read
+ *   PUT /api/owner/alerts/mark-all-read -> Mark all alerts as read
+ *
+ * ASSIGNMENT REQUESTS:
+ *   GET  /api/owner/assignment-requests         -> Pending customer requests
+ *   POST /api/owner/assignment-requests/{id}/approve -> Approve a request
+ *   POST /api/owner/assignment-requests/{id}/reject  -> Reject a request
+ */
 @RestController
 @RequestMapping("/api/owner")
 @RequiredArgsConstructor

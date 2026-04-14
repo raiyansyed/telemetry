@@ -1,3 +1,28 @@
+/**
+ * GaugeComponent - A reusable circular gauge that displays a numeric value with a visual arc.
+ *
+ * HOW IT WORKS:
+ * - Uses CSS conic-gradient to create a circular progress indicator.
+ * - The filled portion of the circle represents the current value as a percentage of max.
+ * - The center shows the numeric value and unit label.
+ *
+ * USAGE IN HTML:
+ *   <app-gauge [value]="85.5" [max]="200" unit="km/h" label="Speed" type="speed"></app-gauge>
+ *
+ * @Input() PROPERTIES:
+ * - value: the current numeric value to display (e.g., 85.5)
+ * - max: the maximum value (used to calculate the percentage; e.g., 200 for speed)
+ * - unit: the unit label shown below the number (e.g., "km/h" or "°C")
+ * - label: descriptive text shown below the gauge (e.g., "Speed" or "Engine Temp")
+ * - type: determines the arc color ('speed' = blue, 'temp' = orange)
+ *
+ * WHAT IS @Input()?
+ * - @Input() marks a property as receivable from a parent component.
+ * - The parent passes data using square brackets: [value]="someVariable"
+ * - This is how Angular components communicate: parent -> child via @Input.
+ *
+ * USED BY: Owner dashboard vehicle detail popup (speed and temperature gauges)
+ */
 import { Component, Input } from '@angular/core';
 
 @Component({

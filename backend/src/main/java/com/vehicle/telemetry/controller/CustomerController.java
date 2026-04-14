@@ -16,6 +16,35 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * CustomerController - API for customers/drivers who use assigned vehicles.
+ *
+ * ENDPOINTS (all require JWT with CUSTOMER role):
+ *
+ * VEHICLE INFO:
+ *   GET  /api/customer/assigned-vehicles      -> List of vehicles assigned to this customer
+ *   GET  /api/customer/assigned-vehicle/latest -> Latest telemetry reading for assigned vehicle
+ *   GET  /api/customer/rentals                -> List of rental records (legacy feature)
+ *
+ * VEHICLE CONTROL:
+ *   POST /api/customer/release-vehicle   -> Release (unassign) the current vehicle
+ *   POST /api/customer/switch-to-auto    -> Switch from manual to auto driving mode
+ *
+ * VEHICLE DISCOVERY & REQUESTS:
+ *   GET  /api/customer/available-vehicles       -> Unassigned vehicles in customer's city
+ *   POST /api/customer/request-vehicle/{id}     -> Request assignment to a specific vehicle
+ *   GET  /api/customer/pending-requests         -> Customer's pending assignment requests
+ *
+ * ALERTS:
+ *   GET /api/customer/alerts          -> Alerts for the customer's assigned vehicle
+ *   PUT /api/customer/alerts/{id}/read -> Mark an alert as read
+ *
+ * CUSTOMER WORKFLOW:
+ *   1. Customer logs in -> sees available vehicles in their city (if no vehicle assigned)
+ *   2. Customer requests a vehicle -> owner sees the request and approves/rejects
+ *   3. Once approved -> customer sees live telemetry, can control the vehicle
+ *   4. Customer can release the vehicle when done -> back to step 1
+ */
 @RestController
 @RequestMapping("/api/customer")
 @RequiredArgsConstructor

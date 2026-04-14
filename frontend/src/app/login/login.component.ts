@@ -1,3 +1,33 @@
+/**
+ * LoginComponent - The sign-in page for the Vehicle Telemetry System.
+ *
+ * This component uses an INLINE TEMPLATE (the HTML is written directly inside this file
+ * instead of a separate .html file). This is common for small, simple pages.
+ *
+ * FEATURES:
+ * - Username & password input fields with two-way data binding [(ngModel)].
+ * - "Sign In" button that calls the POST /api/auth/login endpoint.
+ * - Demo credential buttons ("Owner" / "Customer") that auto-fill the form.
+ * - Link to the Register page for new users.
+ * - Loading spinner state while the API call is in progress.
+ * - Error message display for invalid credentials.
+ *
+ * LOGIN FLOW:
+ * 1. User enters username + password (or clicks a demo button).
+ * 2. Clicks "Sign In" → login() method is called.
+ * 3. ApiService.login() sends POST /api/auth/login with { username, password }.
+ * 4. Backend returns { token, role, location, username }.
+ * 5. All 4 values are stored in localStorage (browser's persistent storage).
+ * 6. Router navigates to /{role} (e.g., /owner or /customer).
+ * 7. On error → shows "Invalid credentials" message.
+ *
+ * DEMO CREDENTIALS (seeded by DatabaseSeedUtility on backend startup):
+ * - Owner: username="owner", password="password" → lands on /owner dashboard.
+ * - Customer: username="customer", password="password" → lands on /customer dashboard.
+ *
+ * STYLING: Uses Tailwind CSS utility classes + CSS custom properties (var(--text), etc.)
+ * for theme support (light/dark mode via ThemeService).
+ */
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';

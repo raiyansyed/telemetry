@@ -1,3 +1,25 @@
+<!--
+  customer.component.html - The Customer Vehicle Dashboard template.
+
+  This template handles TWO states:
+
+  STATE 1: NO VEHICLE (*ngIf="!activeVehicle"):
+  - Shows "No Assigned Vehicles" message.
+  - Lists available (unassigned) vehicles in the customer's city.
+  - Each vehicle card has a "Request Assignment" button.
+
+  STATE 2: VEHICLE ASSIGNED (*ngIf="activeVehicle"):
+  - Info banner: vehicle make/model, VIN, status badge, release button.
+  - Alert banners: speed/temp warnings (yellow = WARNING, red = CRITICAL).
+  - Speedometer: SVG arc gauge with animated needle (0-200 km/h).
+  - Vehicle details card: make/model, rental dates, GPS coordinates.
+  - Controls: throttle slider + GAS/BRAKE pedals (mouse or keyboard W/S).
+  - Temperature gauge: horizontal bar (60-140°C range).
+  - Alert level indicator: NONE (green) / WARNING (yellow) / CRITICAL (red).
+  - Telemetry chart: speed + temperature history (last 20 readings).
+  - Vehicle alerts list: timestamped warning messages.
+  - Release vehicle button: double-confirm pattern (first click shows "Are you sure?").
+-->
 <div class="space-y-6">
   <!-- Header -->
   <div class="flex justify-between items-center">

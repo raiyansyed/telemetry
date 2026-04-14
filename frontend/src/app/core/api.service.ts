@@ -1,7 +1,35 @@
+/**
+ * api.service.ts - The central HTTP service that communicates with the Spring Boot backend.
+ *
+ * WHAT IS A SERVICE IN ANGULAR?
+ * - A service is a class that holds business logic and data access code.
+ * - Unlike components (which have templates/UI), services are pure logic.
+ * - @Injectable({ providedIn: 'root' }) makes it a singleton - one instance for the whole app.
+ * - Components inject this service via their constructor to make API calls.
+ *
+ * WHAT THIS FILE CONTAINS:
+ * 1. TypeScript INTERFACES (at the top):
+ *    - Define the "shape" of data objects (like Java DTOs).
+ *    - TypeScript checks that the data you use matches these shapes at compile time.
+ *    - Examples: AuthResponse, Vehicle, VehicleReading, Alert, etc.
+ *
+ * 2. ApiService CLASS (at the bottom):
+ *    - Methods that make HTTP GET/POST/PUT/DELETE requests to the backend.
+ *    - Each method returns an Observable (RxJS) - Angular's way of handling async data.
+ *    - The AuthInterceptor automatically adds the JWT token to every request.
+ *
+ * API BASE URL: http://localhost:9090/api
+ *
+ * OBSERVABLE PATTERN:
+ * - All methods return Observable<T> instead of Promise<T>.
+ * - Components call .subscribe() to receive the data when it arrives.
+ * - Example: this.apiService.getOwnerVehicles().subscribe({ next: (data) => this.vehicles = data });
+ */
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+/** AuthResponse - Data returned after successful login/registration */
 export interface AuthResponse {
   token: string;
   role: string;
@@ -9,6 +37,7 @@ export interface AuthResponse {
   username: string;
 }
 
+/** FleetAnalytics - Summary stats for the owner dashboard header cards */
 export interface FleetAnalytics {
   averageSpeed: number;
   averageTemperature: number;
@@ -16,6 +45,7 @@ export interface FleetAnalytics {
   activeRentals: number;
 }
 
+/** VehiclePeakSpeed - Highest speed today for a vehicle (peak speed leaderboard) */
 export interface VehiclePeakSpeed {
   vehicleId: number;
   vin: string;
@@ -29,6 +59,7 @@ export interface VehiclePeakSpeed {
   assignedDriverUsername: string | null;
 }
 
+/** VehicleReading - A single telemetry snapshot (speed, temp, GPS, alert level) */
 export interface VehicleReading {
   id: number;
   timestamp: string;
@@ -39,6 +70,7 @@ export interface VehicleReading {
   alertLevel: string;
 }
 
+/** Vehicle - A vehicle in the fleet with its assignment status */
 export interface Vehicle {
   id: number;
   vin: string;
@@ -69,22 +101,25 @@ export interface Rental {
   vehicle: Vehicle;
 }
 
+/** Alert - A notification/alert displayed in the alerts panel */
 export interface Alert {
   id: number;
   message: string;
-  type: string;        // 'CRITICAL' | 'WARNING' | 'INFO'
-  triggeredAt: string;
-  isRead: boolean;
-  licensePlate?: string;
-  isAssignmentRequest?: boolean;
+  type: string;        // 'CRITICAL' | 'WARNING' | 'INFO' - determines the color of the alert
+  triggeredAt: string; // ISO datetime string for display
+  isRead: boolean;     // Whether the user has marked this alert as read
+  licensePlate?: string;         // Vehicle VIN for display (optional)
+  isAssignmentRequest?: boolean; // If true, shows Approve/Reject buttons instead of Read button
 }
 
+/** HourlyData - Hourly averages for the vehicle detail popup chart */
 export interface HourlyData {
   hours: number[];
   avgSpeeds: number[];
   avgTemps: number[];
 }
 
+/** AssignmentCustomerOption - A customer option in the vehicle assignment dropdown */
 export interface AssignmentCustomerOption {
   username: string;
   hasOtherVehicle: boolean;

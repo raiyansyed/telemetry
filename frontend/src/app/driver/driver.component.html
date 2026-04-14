@@ -1,3 +1,20 @@
+<!--
+  driver.component.html - The Driver Cockpit dashboard template.
+
+  LAYOUT (top to bottom):
+  1. HEADER: Title + Auto/Manual mode indicator badge.
+  2. ALERT BANNERS: Warning (yellow) and Critical (red) alerts based on speed/temp.
+  3. SPEEDOMETER + CONTROLS ROW (3 columns):
+     a. LEFT: SVG speedometer gauge (arc + needle + digital readout, 0-200 km/h).
+     b. CENTER: Vehicle controls (throttle slider + GAS/BRAKE pedal buttons).
+     c. RIGHT: Temperature gauge bar + GPS coordinates + Alert level indicator.
+  4. CHART: Line chart showing speed & temperature history (last 20 readings).
+
+  DATA BINDING:
+  - All data comes from DriverComponent's properties (latestReading, readings, etc.).
+  - (mousedown)/(mouseup) events on pedal buttons call start/stopAccelerate/Brake.
+  - [(ngModel)] on throttle slider binds to throttleLevel (0-1).
+-->
 <div class="space-y-6">
   <!-- Header -->
   <div class="flex justify-between items-center">

@@ -1,3 +1,27 @@
+/**
+ * styles.scss - Global stylesheet for the entire Angular application.
+ *
+ * TAILWIND CSS DIRECTIVES:
+ * - @tailwind base: injects Tailwind's base/reset styles (normalizes browser defaults).
+ * - @tailwind components: injects Tailwind's component classes.
+ * - @tailwind utilities: injects utility classes like "flex", "p-4", "text-blue-500", etc.
+ *   These are the classes used throughout all HTML templates.
+ *
+ * CSS CUSTOM PROPERTIES (THEMING):
+ * - :root defines default (light mode) CSS variables.
+ * - [data-theme="dark"] overrides those variables for dark mode.
+ * - Components use var(--bg), var(--text), etc. instead of hardcoded colors.
+ * - The ThemeService toggles the data-theme attribute on <html> to switch themes.
+ *
+ * COLOR PALETTE:
+ * - --bg: page background color
+ * - --text: primary text color
+ * - --card: card/panel background
+ * - --muted: secondary/dimmed text
+ * - --border: borders and dividers
+ * - --accent: interactive elements (buttons, links)
+ * - --success/--warning/--danger: status colors for alerts
+ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -1,3 +1,18 @@
+<!--
+  index.html - The single HTML page that Angular runs inside.
+
+  Angular is a Single Page Application (SPA) framework. This means:
+  - The browser loads this ONE HTML file.
+  - Angular takes over the <app-root> element and renders all components inside it.
+  - When you "navigate" between pages (/login, /owner, /customer), Angular swaps
+    components in and out WITHOUT reloading the full page.
+
+  KEY ELEMENTS:
+  - <base href="/"> tells Angular's router that all URLs start from the root.
+  - <link rel="icon"> sets the browser tab icon to the car logo.
+  - The Google Fonts link loads the "Inter" font family used throughout the app.
+  - <app-root> is where Angular's AppComponent gets rendered.
+-->
 <!doctype html>
 <html lang="en">
 <head>

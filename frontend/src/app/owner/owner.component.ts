@@ -1,3 +1,30 @@
+/**
+ * OwnerComponent - The main Fleet Owner Dashboard.
+ *
+ * This is the LARGEST component in the frontend (~477 lines). It provides:
+ *
+ * DASHBOARD SECTIONS:
+ * 1. Fleet Analytics Cards: avg speed, avg temp, vehicle count, active rentals
+ * 2. Vehicle List: all vehicles with assign/unassign/delete actions
+ * 3. Fleet Trend Charts: real-time speed and temperature line charts (Chart.js)
+ * 4. Peak Speed Leaderboard: top 5 fastest vehicles today
+ * 5. Fleet Alerts Panel: combined alerts + assignment requests
+ * 6. Pending Assignment Requests: approve/reject customer requests
+ * 7. Vehicle Detail Popup: click any vehicle to see live gauges, hourly chart, alerts
+ * 8. Add Vehicle Modal: form to add a new vehicle to the fleet
+ * 9. Assign Vehicle Modal: form to manually assign a vehicle to a customer
+ *
+ * DATA FLOW:
+ * - ngOnInit() starts a polling loop that calls loadData() every 5 seconds.
+ * - loadData() makes 6 parallel API calls to refresh all dashboard data.
+ * - When a vehicle is clicked, selectVehicle() opens the detail popup
+ *   and starts a separate 3-second polling loop for that vehicle's data.
+ *
+ * LIFECYCLE HOOKS:
+ * - OnInit: called once when the component is created. Starts data loading.
+ * - OnDestroy: called when leaving the page. Cleans up polling intervals
+ *   to prevent memory leaks and unnecessary API calls.
+ */
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ApiService, FleetAnalytics, Vehicle, VehiclePeakSpeed, VehicleReading, Alert, HourlyData, AssignmentCustomerOption } from '../core/api.service';
 

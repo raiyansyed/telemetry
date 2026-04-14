@@ -11,6 +11,25 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * DriverController - Provides vehicle telemetry readings and manual driving controls.
+ *
+ * ENDPOINTS:
+ *   GET  /api/driver/vehicle/{id}/readings        -> Last 20 telemetry readings (for chart)
+ *   GET  /api/driver/vehicle/{id}/readings/latest  -> Single most recent reading (for gauges)
+ *   POST /api/driver/vehicle/{id}/control          -> Send accelerate/brake/idle command
+ *
+ * NOTE: Despite the name "driver", this controller is used by BOTH the customer dashboard
+ * and the legacy driver dashboard. The customer dashboard calls these endpoints to display
+ * live telemetry and to send manual driving controls.
+ *
+ * MANUAL CONTROL FLOW:
+ *   1. Customer holds GAS button -> frontend sends POST /control with action="ACCELERATE"
+ *   2. This controller calls VehicleControlService.setThrottle()
+ *   3. Next simulator tick uses the throttle value to calculate new speed
+ *   4. Customer releases button -> frontend sends action="IDLE"
+ *   5. Speed naturally decelerates due to friction
+ */
 @RestController
 @RequestMapping("/api/driver")
 @RequiredArgsConstructor

@@ -1,3 +1,36 @@
+/**
+ * CustomerComponent - The main Customer/Driver Dashboard.
+ *
+ * This is a feature-rich component (~430 lines) that handles TWO states:
+ *
+ * STATE 1: NO VEHICLE ASSIGNED
+ * - Shows "No Assigned Vehicles" message.
+ * - Displays a list of available (unassigned) vehicles in the customer's city.
+ * - Customer can click "Request Assignment" to ask the owner for a vehicle.
+ * - Polls for location changes (if customer switches city in the navbar).
+ *
+ * STATE 2: VEHICLE ASSIGNED
+ * - Shows an info banner with vehicle details (make, model, VIN, status).
+ * - Live speedometer gauge (SVG) that updates every 2 seconds.
+ * - Vehicle details card (make/model, rental info, GPS coordinates).
+ * - GAS and BRAKE buttons for manual driving control (or keyboard: W/S/arrows).
+ * - Temperature gauge (horizontal bar).
+ * - Alert status indicator (NONE/WARNING/CRITICAL).
+ * - Telemetry History chart (last 20 readings).
+ * - Vehicle alerts panel (overspeeding warnings, etc.).
+ * - "Release Vehicle" button with double-confirm (prevents accidental release).
+ * - "Switch to Auto" button to stop manual control.
+ *
+ * KEYBOARD CONTROLS:
+ * - @HostListener('window:keydown') / @HostListener('window:keyup')
+ * - These Angular decorators listen for keyboard events on the entire window.
+ * - W or ArrowUp = accelerate, S or ArrowDown or Space = brake.
+ * - Holding a key sends continuous control commands to the backend.
+ *
+ * DATA POLLING:
+ * - When a vehicle is assigned: polls every 2 seconds for latest telemetry data.
+ * - When no vehicle: polls every 1 second for location changes (to refresh available vehicles).
+ */
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { ApiService, Rental, Vehicle, VehicleReading, Alert, HourlyData } from '../core/api.service';
 

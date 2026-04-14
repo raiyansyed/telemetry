@@ -24,6 +24,32 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * AuthController - Handles user authentication (login) and registration.
+ *
+ * ENDPOINTS (all public - no JWT required):
+ *   GET  /api/auth/locations  -> Returns the list of supported cities for the location dropdown.
+ *   POST /api/auth/login      -> Validates username+password, returns JWT token + user info.
+ *   POST /api/auth/register   -> Creates a new user account, returns JWT token + user info.
+ *
+ * HOW LOGIN WORKS:
+ *   1. Frontend sends { username, password } as JSON.
+ *   2. AuthenticationManager validates credentials against the database (BCrypt hash comparison).
+ *   3. If valid, JwtService generates a JWT token.
+ *   4. Response includes: token, role, location, username.
+ *   5. Frontend stores these in localStorage and redirects to the appropriate dashboard.
+ *
+ * HOW REGISTRATION WORKS:
+ *   1. Frontend sends username, password, role, location, and role-specific fields.
+ *   2. Controller checks for duplicate username.
+ *   3. Creates User entity with BCrypt-hashed password.
+ *   4. Creates role-specific profile (OwnerDetails or CustomerDetails).
+ *   5. Generates JWT token and returns same response as login.
+ *
+ * @RestController = @Controller + @ResponseBody (all methods return JSON, not HTML views).
+ * @RequestMapping("/api/auth") = all endpoints in this class start with /api/auth.
+ * @RequiredArgsConstructor = Lombok generates constructor for dependency injection.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
