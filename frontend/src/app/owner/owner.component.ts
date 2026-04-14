@@ -403,7 +403,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
     if (this.assignSwap) {
       return this.assignmentOptions;
     }
-    return this.assignmentOptions.filter(o => !o.hasOtherVehicle);
+    return this.assignmentOptions.filter(o => !o.hasOtherVehicle && o.username !== 'anynomo');
   }
 
   get hasCustomersNeedingSwap(): boolean {

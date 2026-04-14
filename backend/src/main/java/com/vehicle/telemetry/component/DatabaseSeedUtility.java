@@ -50,6 +50,13 @@ public class DatabaseSeedUtility implements CommandLineRunner {
                 .location(city)
                 .build();
 
+        User customer1 = User.builder()
+                .username("customer1")
+                .password(encoder.encode("password"))
+                .role(Role.CUSTOMER)
+                .location(city)
+                .build();
+
         User customer2 = User.builder()
                 .username("customer2")
                 .password(encoder.encode("password"))
@@ -78,6 +85,13 @@ public class DatabaseSeedUtility implements CommandLineRunner {
                 .build();
         customerDetails = customerDetailsRepository.save(customerDetails);
 
+        CustomerDetails cd1 = CustomerDetails.builder()
+                .user(customer1)
+                .licenseNumber("TN-01-XY-4321")
+                .address("Velachery, " + city)
+                .build();
+        customerDetailsRepository.save(cd1);
+
         CustomerDetails cd2 = CustomerDetails.builder()
                 .user(customer2)
                 .licenseNumber("TN-02-CD-5678")
@@ -92,17 +106,31 @@ public class DatabaseSeedUtility implements CommandLineRunner {
                 .build();
         customerDetailsRepository.save(cd3);
 
+        User anynomoUser = User.builder()
+                .username("anynomo")
+                .password(encoder.encode("password"))
+                .role(Role.CUSTOMER)
+                .location(city)
+                .build();
+
+        CustomerDetails anynomoDetails = CustomerDetails.builder()
+                .user(anynomoUser)
+                .licenseNumber("TN-99-ZZ-9999")
+                .address("Any Street, " + city)
+                .build();
+        customerDetailsRepository.save(anynomoDetails);
+
         String[][] vehicleData = {
                 {"Toyota", "Camry", "2023"},
                 {"Honda", "Civic", "2024"},
-                {"Tesla", "Model 3", "2025"},
+                {"Mahindra", "Thar", "2023"},
                 {"BMW", "X5", "2023"},
                 {"Mercedes", "C-Class", "2024"}
         };
 
         for (int i = 1; i <= 5; i++) {
             Vehicle vehicle = Vehicle.builder()
-                    .vin("VIN000000" + i)
+                    .vin("TN04-FE-000" + i)
                     .make(vehicleData[i - 1][0])
                     .model(vehicleData[i - 1][1])
                     .year(Integer.parseInt(vehicleData[i - 1][2]))
@@ -113,10 +141,10 @@ public class DatabaseSeedUtility implements CommandLineRunner {
                     .build();
             vehicle = vehicleRepository.save(vehicle);
 
-            if (i == 1) {
+            if (i == 5) {
                 Rental rental = Rental.builder()
                         .vehicle(vehicle)
-                        .customer(customerDetails)
+                        .customer(anynomoDetails)
                         .owner(ownerDetails)
                         .startDate(LocalDateTime.now().minusDays(1))
                         .endDate(LocalDateTime.now().plusDays(2))
