@@ -290,6 +290,20 @@ export class OwnerComponent implements OnInit, OnDestroy {
     }
   }
 
+  get combinedAlerts(): Alert[] {
+    const requestAlerts: Alert[] = (this.assignmentRequests || []).map(req => ({
+      id: req.id,
+      message: `${req.customerUsername} is requesting: ${req.vehicleMake} ${req.vehicleModel} (${req.vehicleVin})`,
+      type: 'INFO',
+      triggeredAt: req.createdAt,
+      isRead: false,
+      licensePlate: req.vehicleVin,
+      isAssignmentRequest: true
+    }));
+    return [...requestAlerts, ...(this.fleetAlerts || [])]
+      .sort((a, b) => new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime());
+  }
+
   onFleetAlertRead(alertId: number): void {
     this.apiService.ownerMarkAlertRead(alertId).subscribe({
       next: () => {
@@ -457,13 +471,6 @@ export class OwnerComponent implements OnInit, OnDestroy {
   }
 
   private emojiForMake(make: string): string {
-    const makes: Record<string, string> = {
-      Toyota: '🚙',
-      Honda: '🚗',
-      Tesla: '⚡',
-      BMW: '🏎️',
-      Mercedes: '🚘',
-    };
-    return makes[make] || '🚗';
+    return 'assets/CarLogo.png';
   }
 }

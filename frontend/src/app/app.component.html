@@ -1,47 +1,116 @@
 <div class="min-h-screen bg-[var(--bg)]">
   <!-- Navbar -->
-  <nav class="border-b border-[var(--border)] bg-[var(--card)] shadow-sm sticky top-0 z-50">
+  <nav
+    class="border-b border-[var(--border)] bg-[var(--card)] shadow-sm sticky top-0 z-50"
+  >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16">
         <div class="flex items-center space-x-3">
-          <img src="assets/logo.png" alt="Logo" class="h-9 w-9 object-contain">
-          <h1 class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-600">
+          <img
+            src="assets/logo.png"
+            alt="Logo"
+            class="h-9 w-9 object-contain"
+          />
+          <h1
+            class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-600"
+          >
             Vehicle Telemetry System
           </h1>
         </div>
         <div class="flex items-center space-x-3">
           <!-- Location Selector -->
           <div *ngIf="isLoggedIn" class="relative">
-            <button (click)="toggleLocationMenu()"
+            <button
+              (click)="toggleLocationMenu()"
               class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] transition"
-              [ngClass]="isLocationLocked ? 'opacity-70 cursor-default' : 'hover:border-blue-400 cursor-pointer'">
+              [ngClass]="
+                isLocationLocked
+                  ? 'opacity-70 cursor-default'
+                  : 'hover:border-blue-400 cursor-pointer'
+              "
+            >
               <span>📍</span>
-              <span>{{ activeLocation || 'Set Location' }}</span>
-              <span *ngIf="isLocationLocked" class="text-[var(--muted)] text-[10px]">🔒</span>
-              <span *ngIf="!isLocationLocked" class="text-[var(--muted)]">▾</span>
+              <span>{{ activeLocation || "Set Location" }}</span>
+              <span *ngIf="!isLocationLocked" class="text-[var(--muted)]"
+                >▾</span
+              >
             </button>
-            <div *ngIf="showLocationMenu && !isLocationLocked"
-              class="absolute right-0 mt-2 w-48 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 py-1 max-h-64 overflow-y-auto">
-              <button *ngFor="let loc of locations"
+            <div
+              *ngIf="showLocationMenu && !isLocationLocked"
+              class="absolute right-0 mt-2 w-48 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 py-1 max-h-64 overflow-y-auto"
+            >
+              <button
+                *ngFor="let loc of locations"
                 (click)="changeLocation(loc)"
                 class="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 hover:text-blue-600 transition"
-                [ngClass]="{'bg-blue-50 text-blue-600 font-semibold': activeLocation === loc, 'text-[var(--text)]': activeLocation !== loc}">
+                [ngClass]="{
+                  'bg-blue-50 text-blue-600 font-semibold':
+                    activeLocation === loc,
+                  'text-[var(--text)]': activeLocation !== loc,
+                }"
+              >
                 {{ loc }}
               </button>
             </div>
           </div>
 
-          <span *ngIf="isLoggedIn && username" class="text-xs font-semibold px-3 py-1 rounded-full border border-[var(--border)] text-[var(--text)] bg-[var(--bg)]">
+          <span
+            *ngIf="isLoggedIn && username"
+            class="text-xs font-semibold px-3 py-1 rounded-full border border-[var(--border)] text-[var(--text)] bg-[var(--bg)]"
+          >
             👤 {{ username }}
           </span>
-          <span *ngIf="isLoggedIn" class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-[var(--border)] text-[var(--muted)]">
+          <span
+            *ngIf="isLoggedIn"
+            class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-[var(--border)] text-[var(--muted)]"
+          >
             {{ userRole }}
           </span>
-          <button (click)="themeService.toggleTheme()" class="p-2 rounded-lg hover:bg-[var(--border)] transition text-[var(--muted)]">
-            <span *ngIf="!themeService.isDark">🌙</span>
-            <span *ngIf="themeService.isDark">☀️</span>
-          </button>
-          <button *ngIf="isLoggedIn" (click)="logout()" class="px-4 py-2 text-sm font-medium border border-[var(--border)] rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition text-[var(--text)]">
+          <!-- Animated Theme Toggle Switch -->
+          <label
+            class="relative inline-flex items-center cursor-pointer group select-none"
+          >
+            <input
+              type="checkbox"
+              class="sr-only peer"
+              [checked]="themeService.isDark"
+              (change)="themeService.toggleTheme()"
+            />
+            <span
+              class="w-11 h-6 flex items-center bg-[var(--border)] rounded-full transition-colors duration-300 peer-checked:bg-gray-900"
+            >
+              <span
+                class="absolute left-1.5 text-xs transition-opacity duration-200"
+                [class.opacity-100]="!themeService.isDark"
+                [class.opacity-80]="themeService.isDark"
+                >🌙</span
+              >
+              <span
+                class="absolute right-1.5 text-xs transition-opacity duration-200"
+                [class.opacity-100]="themeService.isDark"
+                [class.opacity-80]="!themeService.isDark"
+                >☀️</span
+              >
+              <span
+                class="absolute left-0 top-0 w-11 h-6 rounded-full pointer-events-none"
+              ></span>
+              <span
+                class="absolute left-0 top-0 w-11 h-6 rounded-full pointer-events-none peer-focus:ring-2 peer-focus:ring-blue-400"
+              ></span>
+              <span
+                class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300"
+                [ngClass]="
+                  themeService.isDark ? 'translate-x-5' : 'translate-x-0'
+                "
+              >
+              </span>
+            </span>
+          </label>
+          <button
+            *ngIf="isLoggedIn"
+            (click)="logout()"
+            class="px-4 py-2 text-sm font-medium border border-[var(--border)] rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition text-[var(--text)]"
+          >
             Logout
           </button>
         </div>
@@ -50,7 +119,11 @@
   </nav>
 
   <!-- Click outside to close location menu -->
-  <div *ngIf="showLocationMenu" (click)="showLocationMenu = false" class="fixed inset-0 z-40"></div>
+  <div
+    *ngIf="showLocationMenu"
+    (click)="showLocationMenu = false"
+    class="fixed inset-0 z-40"
+  ></div>
 
   <!-- Content -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

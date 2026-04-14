@@ -25,7 +25,7 @@
   <!-- Assigned Vehicle Info Banner -->
   <div *ngIf="assignedVehicles.length > 0" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-5 rounded-2xl shadow-lg">
     <div class="flex items-center gap-4">
-      <div class="text-4xl">🚗</div>
+      <img src="assets/CarLogo.png" alt="Car" class="h-10 w-10 object-contain">
       <div class="flex-1">
         <div class="text-xs uppercase tracking-widest opacity-80 font-semibold">Assigned Vehicle</div>
         <div class="text-xl font-bold">{{ assignedVehicles[0].make }} {{ assignedVehicles[0].model }} ({{ assignedVehicles[0].year }})</div>
@@ -59,12 +59,12 @@
     <!-- Available Vehicles -->
     <div *ngIf="availableVehicles.length > 0" class="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden">
       <div class="px-6 py-4 border-b border-[var(--border)]">
-        <h3 class="text-lg font-bold text-[var(--text)]">🚙 Available Vehicles in Your Area</h3>
+        <h3 class="text-lg font-bold text-[var(--text)] flex items-center gap-2"><img src="assets/CarLogo.png" alt="Car" class="h-6 w-6 object-contain"> Available Vehicles in Your Area</h3>
         <p class="text-xs text-[var(--muted)] mt-1">Submit a request and wait for the owner to approve.</p>
       </div>
       <div class="divide-y divide-[var(--border)]">
         <div *ngFor="let v of availableVehicles" class="px-6 py-4 flex items-center gap-4 hover:bg-[var(--bg)] transition">
-          <div class="text-3xl">🚗</div>
+          <img src="assets/CarLogo.png" alt="Car" class="h-8 w-8 object-contain">
           <div class="flex-1">
             <div class="font-bold text-[var(--text)]">{{ v.make }} {{ v.model }} ({{ v.year }})</div>
             <div class="text-xs font-mono text-[var(--muted)]">{{ v.vin }}</div>

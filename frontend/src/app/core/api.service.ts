@@ -72,10 +72,11 @@ export interface Rental {
 export interface Alert {
   id: number;
   message: string;
-  type: string;        // 'CRITICAL' | 'WARNING'
+  type: string;        // 'CRITICAL' | 'WARNING' | 'INFO'
   triggeredAt: string;
   isRead: boolean;
   licensePlate?: string;
+  isAssignmentRequest?: boolean;
 }
 
 export interface HourlyData {
