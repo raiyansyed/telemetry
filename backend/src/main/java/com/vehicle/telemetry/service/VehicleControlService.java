@@ -57,14 +57,14 @@ public class VehicleControlService {
         double nextSpeed;
 
         if (throttle > 0) {
-            // Accelerating — max +5 km/h per tick at full throttle
-            nextSpeed = currentSpeed + (throttle * 5.0);
+            // Accelerating — max +15 km/h per tick at full throttle
+            nextSpeed = currentSpeed + (throttle * 15.0);
         } else if (throttle < 0) {
-            // Braking — max -8 km/h per tick at full brake
-            nextSpeed = currentSpeed + (throttle * 8.0);
+            // Braking — max -15 km/h per tick at full brake
+            nextSpeed = currentSpeed + (throttle * 15.0);
         } else {
             // Idle — natural friction slowdown
-            nextSpeed = currentSpeed - 1.0;
+            nextSpeed = currentSpeed - 2.0;
         }
 
         // Clamp between 0 and 200

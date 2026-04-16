@@ -89,8 +89,21 @@ public class VehicleJourneySimulator implements CommandLineRunner {
                     state.speed = vehicleControlService.computeNextSpeed(vehicleId, state.speed);
                     state.temperature = vehicleControlService.computeTemperature(state.speed);
                 } else {
-                    state.speed = Math.max(0.0, Math.min(130.0, state.speed + (random.nextDouble() * 10 - 5)));
-                    state.temperature = Math.max(60.0, Math.min(120.0, state.temperature + (random.nextDouble() * 4 - 2)));
+                    // Realistic auto-driving: gradual acceleration/cruising/braking phases
+                    state.tickCounter++;
+                    double targetSpeed;
+                    int phase = (state.tickCounter / 20) % 4; // cycle through phases every ~60s
+                    switch (phase) {
+                        case 0: targetSpeed = 50 + random.nextDouble() * 10; break;  // city driving
+                        case 1: targetSpeed = 80 + random.nextDouble() * 15; break;  // highway
+                        case 2: targetSpeed = 100 + random.nextDouble() * 20; break; // fast highway (can trigger warnings)
+                        default: targetSpeed = 30 + random.nextDouble() * 10; break; // slowing down
+                    }
+                    // Gradually approach the target speed (momentum)
+                    double delta = (targetSpeed - state.speed) * 0.15;
+                    state.speed = Math.max(0.0, Math.min(140.0, state.speed + delta));
+                    // Temperature strictly correlates with speed
+                    state.temperature = 70.0 + (state.speed * 0.35) + (random.nextDouble() * 2 - 1);
                 }
 
                 state.latitude += (random.nextDouble() * 0.001 - 0.0005);
@@ -143,6 +156,7 @@ public class VehicleJourneySimulator implements CommandLineRunner {
         double longitude;
         double speed;
         double temperature;
+        int tickCounter;
         AlertLevel lastTelemetryAlertLogged;
 
         VehicleState(Double lat, Double lon, double s, double t, AlertLevel lastTelemetryAlertLogged) {
@@ -150,6 +164,7 @@ public class VehicleJourneySimulator implements CommandLineRunner {
             this.longitude = lon;
             this.speed = s;
             this.temperature = t;
+            this.tickCounter = 0;
             this.lastTelemetryAlertLogged = lastTelemetryAlertLogged;
         }
     }
