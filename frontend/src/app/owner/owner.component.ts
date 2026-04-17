@@ -4,7 +4,7 @@ import { ApiService, FleetAnalytics, Vehicle, VehiclePeakSpeed, VehicleReading, 
 @Component({
   selector: 'app-owner',
   templateUrl: './owner.component.html',
-  styleUrls: ['./owner.component.scss']
+  styleUrls: ['./owner.component.css']
 })
 export class OwnerComponent implements OnInit, OnDestroy {
 

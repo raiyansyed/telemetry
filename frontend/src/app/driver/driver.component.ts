@@ -4,7 +4,7 @@ import { ApiService, VehicleReading } from '../core/api.service';
 @Component({
   selector: 'app-driver',
   templateUrl: './driver.component.html',
-  styleUrls: ['./driver.component.scss']
+  styleUrls: ['./driver.component.css']
 })
 export class DriverComponent implements OnInit, OnDestroy {
   latestReading: VehicleReading | null = null;
