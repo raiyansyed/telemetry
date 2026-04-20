@@ -121,14 +121,16 @@ public class DatabaseSeedUtility implements CommandLineRunner {
         customerDetailsRepository.save(anynomoDetails);
 
         String[][] vehicleData = {
-                {"Toyota", "Camry", "2023"},
+                {"Hyundai", "Creta", "2018"},
+                {"Renault", "Triber", "2020"},
+                {"Maruti Suzuki", "WagonR", "2015"},
                 {"Honda", "Civic", "2024"},
                 {"Mahindra", "Thar", "2023"},
-                {"BMW", "X5", "2023"},
-                {"Mercedes", "C-Class", "2024"}
+                {"Hyundai", "i20", "2021"},
+                {"Maruti Suzuki", "Swift", "2016"}
         };
 
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 1; i <= 7; i++) {
             Vehicle vehicle = Vehicle.builder()
                     .vin("TN04-FE-000" + i)
                     .make(vehicleData[i - 1][0])
