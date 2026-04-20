@@ -50,10 +50,10 @@ import { ThemeService } from '../theme.service';
         <div class="mt-6 border-t border-[var(--border)] pt-4">
           <p class="text-xs text-[var(--muted)] text-center mb-2">Demo Credentials</p>
           <div class="grid grid-cols-2 gap-2 text-center">
-            <button (click)="fillDemo('owner')" class="text-xs px-2 py-1.5 border border-[var(--border)] rounded-md hover:bg-blue-50 hover:border-blue-300 transition text-[var(--text)]">
+            <button (click)="fillDemo('Kapoor')" class="text-xs px-2 py-1.5 border border-[var(--border)] rounded-md hover:bg-blue-50 hover:border-blue-300 transition text-[var(--text)]">
               👔 Owner
             </button>
-            <button (click)="fillDemo('customer')" class="text-xs px-2 py-1.5 border border-[var(--border)] rounded-md hover:bg-purple-50 hover:border-purple-300 transition text-[var(--text)]">
+            <button (click)="fillDemo('Raiyan')" class="text-xs px-2 py-1.5 border border-[var(--border)] rounded-md hover:bg-purple-50 hover:border-purple-300 transition text-[var(--text)]">
               👤 Customer
             </button>
           </div>

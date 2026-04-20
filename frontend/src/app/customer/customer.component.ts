@@ -24,7 +24,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
   readings: VehicleReading[] = [];
   isAccelerating = false;
   isBraking = false;
-  throttleLevel = 0.5;
+  throttleLevel = 0.75;
   controlMode: 'auto' | 'manual' = 'auto';
 
   // Release vehicle double-confirm

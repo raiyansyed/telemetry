@@ -1,7 +1,10 @@
 <div class="space-y-6">
   <div class="flex items-center justify-between">
-    <h2 class="text-3xl font-extrabold text-[var(--text)]">
-      🏢 Fleet Owner Dashboard
+    <h2
+      class="text-3xl font-extrabold text-[var(--text)] flex items-center gap-1"
+    >
+      <img src="../../assets/FOD.png" class="h-10 w-10 object-contain" alt="" />
+      Fleet Owner Dashboard
     </h2>
     <span *ngIf="username" class="text-sm font-semibold text-[var(--muted)]"
       >Welcome, <span class="text-[var(--text)]">{{ username }}</span></span
@@ -478,7 +481,7 @@
   >
     <div class="px-6 py-4 border-b border-[var(--border)]">
       <h3 class="text-lg font-bold text-[var(--text)]">
-        🏎️ Peak Speed Today — Top 5 Vehicles
+        Peak Speed Today — Top 5 Vehicles
       </h3>
       <p class="text-xs text-[var(--muted)] mt-1">
         Click a card for live temperature, speed, GPS, and rental status.
@@ -495,7 +498,11 @@
       >
         <div class="flex items-start justify-between gap-2 mb-2">
           <span class="text-3xl">
-            <img class="h-10 w-10 object-contain" src="../../assets/CarLogo.png" alt="Car" />
+            <img
+              class="h-10 w-10 object-contain"
+              src="../../assets/CarLogo.png"
+              alt="Car"
+            />
           </span>
           <span class="text-[var(--muted)] text-xs font-bold"
             >#{{ i + 1 }}</span
@@ -571,7 +578,13 @@
       <div
         class="px-6 py-4 border-b border-[var(--border)] flex justify-between items-center"
       >
-        <h3 class="text-lg font-bold text-[var(--text)]">🚙 Vehicles</h3>
+        <h3 class="text-lg font-bold text-[var(--text)] flex items-center gap-2">
+          <img
+            src="../../assets/hatchback.png"
+            class="h-12 w-12 object-contain"
+          />
+          Vehicles
+        </h3>
         <button
           (click)="openAddModal()"
           class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
@@ -673,8 +686,11 @@
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
     >
-      <h3 class="text-lg font-bold text-[var(--text)] mb-4">
-        🔔 Owner Fleet Alerts
+      <h3
+        class="text-lg font-bold text-[var(--text)] mb-4 flex items-center gap-1"
+      >
+        <img src="../../assets/bell.png" class="h-8 w-8 object-cover" alt="" />
+        Owner Fleet Alerts
       </h3>
       <app-alert-list
         [alerts]="combinedAlerts"

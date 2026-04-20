@@ -37,35 +37,35 @@ public class DatabaseSeedUtility implements CommandLineRunner {
         String city = AppLocations.DEFAULT_CITY;
 
         User ownerUser = User.builder()
-                .username("owner")
+                .username("Kapoor")
                 .password(encoder.encode("password"))
                 .role(Role.OWNER)
                 .location(city)
                 .build();
 
         User customerUser = User.builder()
-                .username("customer")
+                .username("Raiyan")
                 .password(encoder.encode("password"))
                 .role(Role.CUSTOMER)
                 .location(city)
                 .build();
 
         User customer1 = User.builder()
-                .username("customer1")
+                .username("Anvit")
                 .password(encoder.encode("password"))
                 .role(Role.CUSTOMER)
                 .location(city)
                 .build();
 
         User customer2 = User.builder()
-                .username("customer2")
+                .username("Rounak")
                 .password(encoder.encode("password"))
                 .role(Role.CUSTOMER)
                 .location(city)
                 .build();
 
         User customer3 = User.builder()
-                .username("customer3")
+                .username("Abhishek")
                 .password(encoder.encode("password"))
                 .role(Role.CUSTOMER)
                 .location(city)
