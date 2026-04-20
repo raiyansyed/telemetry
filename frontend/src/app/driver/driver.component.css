@@ -3,11 +3,12 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  &:active {
-    transform: scale(0.94);
-  }
 }
-  
+
+.pedal-btn:active {
+  transform: scale(0.94);
+}
+
 .speedometer svg {
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
 }
