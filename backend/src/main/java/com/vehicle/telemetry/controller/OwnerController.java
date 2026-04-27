@@ -96,7 +96,9 @@ public class OwnerController {
         ownerDetailsRepository.save(owner);
 
         fleetActivityService.log(owner, savedVehicle, savedVehicle.getVin(),
-            "Vehicle added: " + savedVehicle.getMake() + " " + savedVehicle.getModel() + " (" + savedVehicle.getVin() + ")", "INFO");
+                "Vehicle added: " + savedVehicle.getMake() + " " + savedVehicle.getModel() + " ("
+                        + savedVehicle.getVin() + ")",
+                "INFO");
 
         return ResponseEntity.ok(savedVehicle);
     }
@@ -182,7 +184,8 @@ public class OwnerController {
     @GetMapping("/assignment-requests")
     public ResponseEntity<?> getAssignmentRequests(Principal principal) {
         OwnerDetails owner = resolveOwner(principal);
-        List<AssignmentRequest> requests = assignmentRequestRepository.findByOwner_IdAndStatusOrderByCreatedAtDesc(owner.getId(), "PENDING");
+        List<AssignmentRequest> requests = assignmentRequestRepository
+                .findByOwner_IdAndStatusOrderByCreatedAtDesc(owner.getId(), "PENDING");
         return ResponseEntity.ok(requests.stream().map(r -> Map.of(
                 "id", r.getId(),
                 "customerUsername", r.getCustomer().getUser().getUsername(),
@@ -191,8 +194,7 @@ public class OwnerController {
                 "vehicleModel", r.getVehicle().getModel(),
                 "vehicleId", r.getVehicle().getId(),
                 "status", r.getStatus(),
-                "createdAt", r.getCreatedAt().toString()
-        )).collect(Collectors.toList()));
+                "createdAt", r.getCreatedAt().toString())).collect(Collectors.toList()));
     }
 
     @PostMapping("/assignment-requests/{id}/approve")
@@ -254,9 +256,6 @@ public class OwnerController {
         return ResponseEntity.ok(Map.of("status", "rejected"));
     }
 
-    /**
-     * Customers registered in the same location as the vehicle, with flags for swap UX.
-     */
     @GetMapping("/vehicles/{id}/assignment-options")
     public ResponseEntity<?> getAssignmentOptions(@PathVariable Long id, Principal principal) {
         OwnerDetails owner = resolveOwner(principal);
@@ -300,8 +299,7 @@ public class OwnerController {
     public ResponseEntity<?> assignVehicle(
             @PathVariable Long id,
             @RequestBody VehicleAssignRequest request,
-            Principal principal
-    ) {
+            Principal principal) {
         OwnerDetails owner = resolveOwner(principal);
         Vehicle vehicle = vehicleRepository.findByOwnerIdAndId(owner.getId(), id).orElse(null);
         if (vehicle == null) {
@@ -314,12 +312,14 @@ public class OwnerController {
 
         User customerUser = userRepository.findByUsername(request.getCustomerUsername().trim()).orElse(null);
         if (customerUser == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "User '" + request.getCustomerUsername() + "' not found"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "User '" + request.getCustomerUsername() + "' not found"));
         }
 
         CustomerDetails customer = customerDetailsRepository.findByUserId(customerUser.getId()).orElse(null);
         if (customer == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "User '" + request.getCustomerUsername() + "' is not a customer"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "User '" + request.getCustomerUsername() + "' is not a customer"));
         }
 
         String vLoc = vehicle.getLocation() != null ? vehicle.getLocation().trim() : "";
@@ -340,7 +340,8 @@ public class OwnerController {
         if (!existing.isEmpty()) {
             if (!swap) {
                 return ResponseEntity.badRequest().body(Map.of(
-                        "message", "This customer already has another vehicle assigned. Enable swap to move them to this vehicle."));
+                        "message",
+                        "This customer already has another vehicle assigned. Enable swap to move them to this vehicle."));
             }
             for (Vehicle other : existing) {
                 other.setAssignedCustomer(null);
@@ -361,8 +362,7 @@ public class OwnerController {
         return ResponseEntity.ok(Map.of(
                 "status", "assigned",
                 "vehicleVin", vehicle.getVin(),
-                "assignedTo", customerUser.getUsername()
-        ));
+                "assignedTo", customerUser.getUsername()));
     }
 
     @PostMapping("/vehicles/{id}/unassign")

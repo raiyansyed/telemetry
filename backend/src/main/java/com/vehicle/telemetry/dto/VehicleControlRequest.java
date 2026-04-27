@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VehicleControlRequest {
-    private String action; // ACCELERATE, BRAKE, IDLE
-    private Double throttle; // 0.0 to 1.0
+    private String action; 
+    private Double throttle;
 }

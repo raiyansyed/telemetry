@@ -29,9 +29,6 @@ public class FleetActivityService {
                 vin != null ? vin : (vehicle != null ? vehicle.getVin() : null), message, alertType);
     }
 
-    /**
-     * Persists fleet activity using only ids (safe from non-request threads e.g. simulator).
-     */
     @Transactional
     public void logByIds(Long ownerDetailsId, Long vehicleId, String vin, String message, String alertType) {
         OwnerDetails ownerRef = ownerDetailsRepository.getReferenceById(ownerDetailsId);
@@ -61,18 +58,12 @@ public class FleetActivityService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Returns alerts for a specific vehicle (used by customer dashboard).
-     */
     public List<FleetAlertResponse> listForVehicleDirect(Long vehicleId) {
         return fleetActivityRepository.findTop50ByVehicle_IdOrderByCreatedAtDesc(vehicleId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Mark an alert as read by vehicle ownership check (for customers).
-     */
     @Transactional
     public void markReadByVehicle(Long activityId, Long vehicleId) {
         fleetActivityRepository.findById(activityId).ifPresent(a -> {

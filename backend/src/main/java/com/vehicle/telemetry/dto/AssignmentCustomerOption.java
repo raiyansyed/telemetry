@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AssignmentCustomerOption {
     private String username;
-    /** True if this customer already has a different vehicle assigned */
     private boolean hasOtherVehicle;
     private Long otherVehicleId;
     private String otherVehicleVin;

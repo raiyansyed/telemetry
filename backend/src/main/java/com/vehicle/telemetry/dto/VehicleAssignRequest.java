@@ -11,6 +11,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class VehicleAssignRequest {
     private String customerUsername;
-    /** When true, unassigns the customer's other vehicle (if any) before assigning this one */
     private Boolean swap;
 }

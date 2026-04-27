@@ -24,15 +24,12 @@ public interface VehicleReadingRepository extends JpaRepository<VehicleReading, 
 
     VehicleReading findFirstByVehicleIdOrderByTimestampDesc(Long vehicleId);
 
-    // For owner speed/temp trends — latest 50 readings across all fleet vehicles
     @Query("SELECT vr FROM VehicleReading vr WHERE vr.vehicle.owner.id = :ownerId ORDER BY vr.timestamp DESC")
     List<VehicleReading> findTop50ByOwner(@Param("ownerId") Long ownerId);
 
-    // For peak speed today per vehicle — max speed reading per vehicle belonging to an owner
     @Query("SELECT vr FROM VehicleReading vr WHERE vr.vehicle.owner.id = :ownerId AND vr.timestamp >= :since ORDER BY vr.speed DESC")
     List<VehicleReading> findReadingsByOwnerSince(@Param("ownerId") Long ownerId, @Param("since") LocalDateTime since);
 
-    // Readings for a specific vehicle since a timestamp (for hourly aggregation)
     @Query("SELECT vr FROM VehicleReading vr WHERE vr.vehicle.id = :vehicleId AND vr.timestamp >= :since ORDER BY vr.timestamp ASC")
     List<VehicleReading> findByVehicleIdSince(@Param("vehicleId") Long vehicleId, @Param("since") LocalDateTime since);
 

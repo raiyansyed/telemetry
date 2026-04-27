@@ -28,13 +28,11 @@ public class FleetActivity {
     @JoinColumn(name = "vehicle_id")
     private Vehicle vehicle;
 
-    /** Snapshot when vehicle row may be deleted */
     private String vin;
 
     @Column(length = 1024, nullable = false)
     private String message;
 
-    /** INFO (fleet ops), WARNING, CRITICAL (telemetry thresholds) */
     @Column(nullable = false, length = 32)
     private String alertType;
 

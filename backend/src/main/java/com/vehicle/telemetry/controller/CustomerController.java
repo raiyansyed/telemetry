@@ -83,7 +83,7 @@ public class CustomerController {
         return ResponseEntity.ok(Map.of("status", "released", "vehicleVin", vehicle.getVin()));
     }
 
-    /** Customer requests assignment to a specific vehicle */
+    // Customer requests assignment to a specific vehicle 
     @PostMapping("/request-vehicle/{vehicleId}")
     @Transactional
     public ResponseEntity<?> requestVehicle(@PathVariable Long vehicleId, Principal principal) {
@@ -93,7 +93,8 @@ public class CustomerController {
         // Cannot request if already assigned
         List<Vehicle> assigned = vehicleRepository.findByAssignedCustomerId(customer.getId());
         if (!assigned.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "You already have an assigned vehicle. Release it first."));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "You already have an assigned vehicle. Release it first."));
         }
 
         Vehicle vehicle = vehicleRepository.findById(vehicleId).orElse(null);
@@ -110,14 +111,16 @@ public class CustomerController {
 
         // Vehicle must be available (ACTIVE status, no assigned customer)
         if (vehicle.getAssignedCustomer() != null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Vehicle is already assigned to another customer"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Vehicle is already assigned to another customer"));
         }
 
         // Check for duplicate pending request
         var existingReq = assignmentRequestRepository.findByCustomer_IdAndVehicle_IdAndStatus(
                 customer.getId(), vehicleId, "PENDING");
         if (existingReq.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "You already have a pending request for this vehicle"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "You already have a pending request for this vehicle"));
         }
 
         AssignmentRequest req = AssignmentRequest.builder()
@@ -132,7 +135,7 @@ public class CustomerController {
         return ResponseEntity.ok(Map.of("status", "requested", "vehicleVin", vehicle.getVin()));
     }
 
-    /** List available (unassigned) vehicles in the customer's location */
+    // List available (unassigned) vehicles in the customer's location 
     @GetMapping("/available-vehicles")
     public ResponseEntity<?> getAvailableVehicles(Principal principal) {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
@@ -178,14 +181,14 @@ public class CustomerController {
     public ResponseEntity<?> getPendingRequests(Principal principal) {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         CustomerDetails customer = customerDetailsRepository.findByUserId(user.getId()).orElseThrow();
-        List<AssignmentRequest> pending = assignmentRequestRepository.findByCustomer_IdOrderByCreatedAtDesc(customer.getId())
+        List<AssignmentRequest> pending = assignmentRequestRepository
+                .findByCustomer_IdOrderByCreatedAtDesc(customer.getId())
                 .stream().filter(r -> "PENDING".equals(r.getStatus())).toList();
         return ResponseEntity.ok(pending.stream().map(r -> Map.of(
                 "id", r.getId(),
                 "vehicleId", r.getVehicle().getId(),
                 "vehicleVin", r.getVehicle().getVin(),
-                "status", r.getStatus()
-        )).toList());
+                "status", r.getStatus())).toList());
     }
 
     /** Switch vehicle back to auto (clear manual control) */

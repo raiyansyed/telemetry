@@ -55,7 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Ignore token parsing validation errors and continue filter chain
+            e.printStackTrace();
         }
         filterChain.doFilter(request, response);
     }

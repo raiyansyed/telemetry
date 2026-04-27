@@ -29,7 +29,6 @@ public class AssignmentRequest {
     @JoinColumn(name = "owner_id")
     private OwnerDetails owner;
 
-    /** PENDING, APPROVED, REJECTED */
     @Column(nullable = false, length = 20)
     private String status;
 

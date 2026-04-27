@@ -27,7 +27,6 @@ public class VehicleService {
         Double avgTemp = vehicleReadingRepository.getAverageTemperatureByOwner(ownerId);
         List<Vehicle> ownerVehicles = vehicleRepository.findByOwnerId(ownerId);
         long vehicleCount = ownerVehicles.size();
-        // Count vehicles that have an assigned customer (status RENTED) — not legacy rental rows
         long activeRentals = ownerVehicles.stream()
                 .filter(v -> v.getAssignedCustomer() != null)
                 .count();
@@ -53,9 +52,6 @@ public class VehicleService {
         return vehicleRepository.findAllJoinFetchOwner();
     }
 
-    /**
-     * Returns the latest 50 fleet-wide readings for chart trends.
-     */
     public List<VehicleReading> getFleetTrendReadings(Long ownerId) {
         List<VehicleReading> readings = vehicleReadingRepository.findTop50ByOwner(ownerId);
         if (readings.size() > 50) {
@@ -65,16 +61,10 @@ public class VehicleService {
         return readings;
     }
 
-    /**
-     * Returns peak speed today for the top 5 vehicles belonging to an owner.
-     * Matches the dataset example: peak speed, avg engine temp, GPS location, timestamp.
-     * Now includes the assigned driver/customer username.
-     */
     public List<VehiclePeakSpeed> getTopVehiclePeakSpeeds(Long ownerId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         List<VehicleReading> readings = vehicleReadingRepository.findReadingsByOwnerSince(ownerId, startOfDay);
 
-        // Group by vehicle, find the reading with max speed per vehicle
         Map<Long, VehicleReading> peakByVehicle = new LinkedHashMap<>();
         for (VehicleReading r : readings) {
             Long vid = r.getVehicle().getId();
@@ -83,7 +73,6 @@ public class VehicleService {
             }
         }
 
-        // Sort by peak speed descending and take top 5
         return peakByVehicle.values().stream()
                 .sorted(Comparator.comparingDouble(VehicleReading::getSpeed).reversed())
                 .limit(5)
@@ -109,15 +98,10 @@ public class VehicleService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Returns hourly aggregation for a specific vehicle (today's data).
-     * Returns a map of { hours: [...], avgSpeeds: [...], avgTemps: [...] }
-     */
     public Map<String, Object> getHourlyAggregation(Long vehicleId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         List<VehicleReading> readings = vehicleReadingRepository.findByVehicleIdSince(vehicleId, startOfDay);
 
-        // Group readings by hour
         Map<Integer, List<VehicleReading>> byHour = new TreeMap<>();
         for (VehicleReading r : readings) {
             int hour = r.getTimestamp().getHour();

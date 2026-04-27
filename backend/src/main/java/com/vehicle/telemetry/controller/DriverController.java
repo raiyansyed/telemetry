@@ -32,13 +32,11 @@ public class DriverController {
     @PostMapping("/vehicle/{id}/control")
     public ResponseEntity<Map<String, String>> controlVehicle(
             @PathVariable Long id,
-            @RequestBody VehicleControlRequest request
-    ) {
+            @RequestBody VehicleControlRequest request) {
         vehicleControlService.setThrottle(id, request.getAction(), request.getThrottle());
         return ResponseEntity.ok(Map.of(
                 "status", "ok",
                 "action", request.getAction(),
-                "throttle", String.valueOf(request.getThrottle())
-        ));
+                "throttle", String.valueOf(request.getThrottle())));
     }
 }

@@ -2,9 +2,7 @@ package com.vehicle.telemetry.config;
 
 import java.util.List;
 
-/**
- * Canonical list of supported cities and the application default (Chennai).
- */
+// List of the supported cities for which the application is supporting
 public final class AppLocations {
 
     private AppLocations() {

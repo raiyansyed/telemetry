@@ -36,6 +36,5 @@ public class Vehicle {
 
     private String imageUrl;
 
-    /** Operating city; assignment dropdown filters customers in this location */
     private String location;
 }

@@ -38,29 +38,26 @@ public class UserController {
                 "username", user.getUsername(),
                 "role", user.getRole().name(),
                 "location", user.getLocation() != null ? user.getLocation() : "",
-                "isAssigned", isAssigned
-        ));
+                "isAssigned", isAssigned));
     }
 
     @PutMapping("/location")
     public ResponseEntity<Map<String, String>> updateLocation(
             @RequestBody Map<String, String> body,
-            Principal principal
-    ) {
+            Principal principal) {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
 
-        // Owners cannot change location after registration
         if (user.getRole() == Role.OWNER) {
             return ResponseEntity.badRequest().body(Map.of("error", "Owner location is locked after registration"));
         }
 
-        // Customers with assigned vehicles cannot change location
         if (user.getRole() == Role.CUSTOMER) {
             var customer = customerDetailsRepository.findByUserId(user.getId()).orElse(null);
             if (customer != null) {
                 List<Vehicle> assigned = vehicleRepository.findByAssignedCustomerId(customer.getId());
                 if (!assigned.isEmpty()) {
-                    return ResponseEntity.badRequest().body(Map.of("error", "Cannot change location while assigned to a vehicle"));
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "Cannot change location while assigned to a vehicle"));
                 }
             }
         }
