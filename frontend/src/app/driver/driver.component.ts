@@ -21,7 +21,6 @@ export class DriverComponent implements OnInit, OnDestroy {
   // Gauge
   get speedNeedleAngle(): number {
     const speed = this.latestReading?.speed || 0;
-    // Map 0-200 km/h to -135° to +135° (270° sweep)
     return -135 + (speed / 200) * 270;
   }
 
@@ -65,7 +64,7 @@ export class DriverComponent implements OnInit, OnDestroy {
     this.stopBrake();
   }
 
-  // -- Keyboard controls --
+  // Keyboard controls 
   @HostListener('window:keydown', ['$event'])
   onKeyDown(e: KeyboardEvent) {
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {

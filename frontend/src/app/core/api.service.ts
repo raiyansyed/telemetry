@@ -72,7 +72,7 @@ export interface Rental {
 export interface Alert {
   id: number;
   message: string;
-  type: string;        // 'CRITICAL' | 'WARNING' | 'INFO'
+  type: string;        
   triggeredAt: string;
   isRead: boolean;
   licensePlate?: string;
@@ -114,7 +114,7 @@ export class ApiService {
     return this.http.get<string[]>(`${this.baseUrl}/auth/locations`);
   }
 
-  // --- User Profile & Location ---
+  //  User Profile & Location 
   getUserProfile(): Observable<{ username: string; role: string; location: string }> {
     return this.http.get<{ username: string; role: string; location: string }>(`${this.baseUrl}/user/profile`);
   }
@@ -123,7 +123,7 @@ export class ApiService {
     return this.http.put<{ location: string }>(`${this.baseUrl}/user/location`, { location });
   }
 
-  // --- Owner ---
+  //  Owner 
   getOwnerAnalytics(): Observable<FleetAnalytics> {
     return this.http.get<FleetAnalytics>(`${this.baseUrl}/owner/analytics`);
   }
@@ -183,7 +183,7 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/owner/vehicles/${vehicleId}/unassign`, {});
   }
 
-  // --- Driver ---
+  //  Driver 
   getDriverLatestReading(vehicleId: number): Observable<VehicleReading> {
     return this.http.get<VehicleReading>(`${this.baseUrl}/driver/vehicle/${vehicleId}/readings/latest`);
   }
@@ -196,7 +196,7 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/driver/vehicle/${vehicleId}/control`, { action, throttle });
   }
 
-  // --- Customer ---
+  // Customer 
   getCustomerRentals(): Observable<Rental[]> {
     return this.http.get<Rental[]>(`${this.baseUrl}/customer/rentals`);
   }
@@ -221,12 +221,12 @@ export class ApiService {
     return this.http.put(`${this.baseUrl}/customer/alerts/${alertId}/read`, {});
   }
 
-  // --- Owner: Mark All Alerts Read ---
+  //  Owner: Mark All Alerts Read 
   ownerMarkAllAlertsRead(): Observable<any> {
     return this.http.put(`${this.baseUrl}/owner/alerts/mark-all-read`, {});
   }
 
-  // --- Owner: Assignment Requests ---
+  // Owner: Assignment Requests 
   getOwnerAssignmentRequests(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/owner/assignment-requests`);
   }
@@ -239,27 +239,27 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/owner/assignment-requests/${requestId}/reject`, {});
   }
 
-  // --- Customer: Release Vehicle ---
+  //  Customer: Release Vehicle 
   customerReleaseVehicle(): Observable<any> {
     return this.http.post(`${this.baseUrl}/customer/release-vehicle`, {});
   }
 
-  // --- Customer: Request Vehicle ---
+  //  Customer: Request Vehicle 
   customerRequestVehicle(vehicleId: number): Observable<any> {
     return this.http.post(`${this.baseUrl}/customer/request-vehicle/${vehicleId}`, {});
   }
 
-  // --- Customer: Available Vehicles ---
+  //  Customer: Available Vehicles `
   getCustomerAvailableVehicles(): Observable<Vehicle[]> {
     return this.http.get<Vehicle[]>(`${this.baseUrl}/customer/available-vehicles`);
   }
 
-  // --- Customer: Pending Requests ---
+  //  Customer: Pending Requests 
   getCustomerPendingRequests(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/customer/pending-requests`);
   }
 
-  // --- Customer: Switch to Auto ---
+  //  Customer: Switch to Auto 
   customerSwitchToAuto(): Observable<any> {
     return this.http.post(`${this.baseUrl}/customer/switch-to-auto`, {});
   }

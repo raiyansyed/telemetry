@@ -379,7 +379,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ---- Delete Vehicle ----
+  //  Delete Vehicle 
   deleteVehicle(vehicle: Vehicle, event: Event): void {
     event.stopPropagation();
     if (!confirm(`Delete vehicle ${vehicle.vin}? This will remove all its readings.`)) return;
@@ -392,7 +392,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ---- Assign Vehicle Modal ----
+  // Assign Vehicle Modal 
   openAssignModal(vehicle: Vehicle, event: Event): void {
     event.stopPropagation();
     this.assignVehicle = vehicle;

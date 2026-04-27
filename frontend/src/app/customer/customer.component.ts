@@ -88,7 +88,6 @@ export class CustomerComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.username = localStorage.getItem('username') || '';
     this.loadInitialData();
-    // Poll for location changes (when customer switches city in navbar)
     this.locationCheckInterval = setInterval(() => {
       if (!this.hasVehicle) {
         const currentLoc = localStorage.getItem('location') || '';
@@ -208,7 +207,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
     return this.assignedVehicles.length > 0 || this.activeRental != null;
   }
 
-  // ---- Owner Info (from rental) ----
+  // Owner Info (from rental) 
   get ownerCompany(): string {
     return (this.activeRental as any)?.owner?.companyName || 'Fleet Owner';
   }
@@ -217,7 +216,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
     return (this.activeRental as any)?.owner?.user?.username || 'Owner';
   }
 
-  // ---- Vehicle Controls (from driver) ----
+  // Vehicle Controls (from driver) 
   @HostListener('window:keydown', ['$event'])
   onKeyDown(e: KeyboardEvent) {
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
@@ -275,7 +274,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
     this.apiService.controlVehicle(this.vehicleId, action, this.throttleLevel).subscribe();
   }
 
-  // ---- Release Vehicle (double confirm) ----
+  //  Release Vehicle (double confirm) 
   initiateRelease(): void {
     this.releaseStep = 1;
   }
@@ -307,7 +306,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ---- Request Vehicle ----
+  //  Request Vehicle 
   requestVehicle(vehicleId: number): void {
     this.requestLoading = true;
     this.apiService.customerRequestVehicle(vehicleId).subscribe({
@@ -322,7 +321,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ---- Switch to Auto ----
+  //  Switch to Auto 
   switchToAuto(): void {
     this.apiService.customerSwitchToAuto().subscribe({
       next: () => {

@@ -37,13 +37,11 @@ export class AppComponent implements OnInit {
       error: () => { this.locations = ['Chennai']; }
     });
 
-    // Hydrate on init
     this.hydrateFromLocalStorage();
     if (this.isLoggedIn) {
       this.loadProfile();
     }
 
-    // Re-hydrate on every navigation (catches post-login redirect)
     this.router.events.pipe(
       filter(e => e instanceof NavigationEnd)
     ).subscribe(() => {
@@ -53,7 +51,6 @@ export class AppComponent implements OnInit {
       }
     });
 
-    // If user is logged in but on the root path, redirect to their dashboard
     if (this.isLoggedIn && this.userRole) {
       const currentUrl = this.router.url;
       if (currentUrl === '/' || currentUrl === '/login') {
@@ -65,7 +62,6 @@ export class AppComponent implements OnInit {
   private hydrateFromLocalStorage(): void {
     this.activeLocation = localStorage.getItem('location') || '';
     this.username = localStorage.getItem('username') || '';
-    // Immediately lock for owners based on role from localStorage
     if (this.userRole === 'OWNER') {
       this.isLocationLocked = true;
     }
@@ -80,7 +76,6 @@ export class AppComponent implements OnInit {
         if (profile.location) {
           localStorage.setItem('location', profile.location);
         }
-        // Owner location is always locked; assigned customers are also locked
         if (this.userRole === 'OWNER') {
           this.isLocationLocked = true;
         } else if (this.userRole === 'CUSTOMER') {
@@ -97,7 +92,7 @@ export class AppComponent implements OnInit {
     this.showLocationMenu = false;
     localStorage.setItem('location', location);
     this.apiService.updateLocation(location).subscribe({
-      error: () => {} // Silently handle errors
+      error: () => {} 
     });
   }
 

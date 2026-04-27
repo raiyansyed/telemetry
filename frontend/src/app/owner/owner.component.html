@@ -11,7 +11,7 @@
     >
   </div>
 
-  <!-- ====== ADD VEHICLE MODAL ====== -->
+  <!-- Adding Vehicle -->
   <div
     *ngIf="showAddModal"
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -108,7 +108,7 @@
     </div>
   </div>
 
-  <!-- ====== ASSIGN VEHICLE MODAL ====== -->
+  <!-- Add vehicle model -->
   <div
     *ngIf="showAssignModal"
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -206,7 +206,7 @@
     </div>
   </div>
 
-  <!-- ====== ASSIGNMENT REQUESTS ====== -->
+  <!-- Assignment requests -->
   <div
     *ngIf="assignmentRequests.length > 0"
     class="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden"
@@ -253,7 +253,7 @@
     </div>
   </div>
 
-  <!-- ====== VEHICLE DETAIL POPUP MODAL ====== -->
+  <!-- Vehicle Detail Popup Modal -->
   <div
     *ngIf="showDetailModal && selectedVehicle"
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -421,7 +421,7 @@
     </div>
   </div>
 
-  <!-- ====== FLEET SUMMARY CARDS ====== -->
+  <!-- fleet summary cards -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm hover:shadow-md transition"
@@ -475,7 +475,7 @@
     </div>
   </div>
 
-  <!-- ====== PEAK SPEED TODAY — TOP 5 VEHICLES (clickable cards) ====== -->
+  <!-- peak speed today — top 5 vehicles (clickable cards) -->
   <div
     class="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden"
   >
@@ -569,7 +569,7 @@
     </div>
   </div>
 
-  <!-- ====== VEHICLES + FLEET ALERTS (side by side) ====== -->
+  <!-- vehicles + fleet alerts -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Vehicle Roster with Actions -->
     <div
@@ -704,7 +704,7 @@
     </div>
   </div>
 
-  <!-- ====== CHARTS ====== -->
+  <!-- charts-->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div
       class="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
