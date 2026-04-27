@@ -298,6 +298,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
           this.pollInterval = null;
         }
         this.loadAvailableVehicles();
+        window.location.reload();
       },
       error: (err) => {
         this.releaseStep = 0;

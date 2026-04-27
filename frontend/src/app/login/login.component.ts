@@ -101,6 +101,7 @@ export class LoginComponent {
         localStorage.setItem('username', res.username || this.username);
         this.loading = false;
         this.router.navigate([`/${res.role.toLowerCase()}`]);
+        window.location.reload();
       },
       error: () => {
         this.error = 'Invalid credentials. Please try again.';
